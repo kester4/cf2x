@@ -1,0 +1,1 @@
+currently implemented: parser, tokenizer and rpn evaluator plus quiet nice grid gui and a very shitty input ui. must rewrite README later.
