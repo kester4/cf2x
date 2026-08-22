@@ -380,6 +380,8 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		printf("Assets not loaded...\n");
 		return false;
 	}
+	SetTextureFilter(font->texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(plots_cache->texture, TEXTURE_FILTER_BILINEAR);
 
 	for (size_t i = 0; i < MAX_EQUATIONS; ++i)
 	{
@@ -395,10 +397,40 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	return true;
 }
 
-void free_plots(Input *inputs, size_t *size)
+void free_plot(Plot *p)
 {
-	if (size == 0 || !inputs) return;
+	free(p->plot_program);
+	free(p->values);
+	*p = (Plot){ 0 };
+}
 
+void free_plots(size_t *size, Input *inputs)
+{
+	if (!inputs || !size)
+		return;
+
+	for (size_t i = 0; i < *size; ++i)
+	{
+		free_plot(&inputs[i].plot);
+		inputs[i].text[0] = '\0';
+		inputs[i].valid = false;
+	}
+}
+
+void update_plot(Input *input)
+{
+	if (validate(input->text) == -1)
+	{
+		Plot new = plot(input->text);
+		if (new.values)
+		{
+			free_plot(&input->plot); // previous
+			input->plot = new;
+			input->valid = true;
+		}
+	}
+	else
+		input->valid = false;
 }
 
 int main(void)
@@ -459,8 +491,7 @@ int main(void)
 			// clear all pressed
 			if (CheckCollisionPointRec(mouse, erase_button(w, h, 1.0f)))
 			{
-				free_plots(inputs, &total);
-				// memset(inputs, 0, sizeof(inputs));
+				free_plots(&total, inputs);
 				active = 0;
 				total = 1;
 				changed = true;
@@ -487,7 +518,7 @@ int main(void)
 			size_t len = strlen(inputs[active].text);
 			if (len + 1 >= inputs[active].capacity)
 			{
-				size_t new_len = inputs[active].capacity *= 2;
+				size_t new_len = inputs[active].capacity * 2;
 				char *new_text = realloc(inputs[active].text, new_len);
 				if (!new_text)
 					break;
@@ -500,16 +531,7 @@ int main(void)
 			{
 				inputs[active].text[len] = (char)c;
 				inputs[active].text[len + 1] = '\0';
-				if (validate(inputs[active].text) == -1)
-				{
-					Plot new_plot = plot(inputs[active].text);
-					if (!new_plot.values)
-						break;
-					inputs[active].plot = new_plot;
-					inputs[active].valid = true;
-				}
-				else
-					inputs[active].valid = false;
+				update_plot(&inputs[active]);
 				changed = true;
 			}
 		}
@@ -520,16 +542,7 @@ int main(void)
 			if (len > 0)
 			{
 				inputs[active].text[len - 1] = '\0';
-				if (validate(inputs[active].text) == -1)
-				{
-					Plot new_plot = plot(inputs[active].text);
-					if (!new_plot.values)
-						break;
-					inputs[active].plot = new_plot;
-					inputs[active].valid = true;
-				}
-				else
-					inputs[active].valid = false;
+				update_plot(&inputs[active]);
 				changed = true;
 			}
 		}
@@ -591,6 +604,7 @@ int main(void)
 		EndDrawing();
 	}
 
+	free_plots(&total, inputs);
 	CloseWindow();
 
 	return 0;
