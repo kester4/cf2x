@@ -435,9 +435,8 @@ void update_plot(Input *input)
 #include "../tests.h"
 int main(void)
 {
-	char test[] = "-xxcotan(x)xcos(sin(cos(tan(cotan(22.2x)))))^xtan(-1)";
-	test_complex();
-	//test_complex();
+	char test[] = "3 + 2 * (sin(x + 1))^2 - cos(x / 2)";
+	test_simple(test, 2.0);
 	return;
 	Font font;
 	RenderTexture2D plots_cache;

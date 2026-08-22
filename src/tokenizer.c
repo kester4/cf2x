@@ -75,12 +75,17 @@ long validate(char *raw_str)
 				continue;
 			}
 			
+			// trigonometry
 			size_t left = length - i;
 			if      (left >= 4 && strncmp(raw_str + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(raw_str + i, "cos(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(raw_str + i, "tan(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 6 && strncmp(raw_str + i, "cotan(", 6) == 0) { ++bracket_depth; i += 5; }
 			else
+				return i;
+
+			// blang trig_func() parens are not allowed
+			if (length - i >= 1 && raw_str[i + 1] == ')')
 				return i;
 		}
 

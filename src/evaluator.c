@@ -5,6 +5,9 @@ static inline unsigned int precedence(char op)
 {
 	switch (op)
 	{
+	case 's': return 4;
+	case 'c': return 4;
+	case 't': return 4;
 	case '^': return 3;
 	case '*': return 2;
 	case '/': return 2;
@@ -42,7 +45,7 @@ TokenData shunting_yard(TokenData _tokens)
 		unsigned char t = (unsigned char)tokens[i][0];
 
 		// token is a number or an argument
-		if (isalnum(t)
+		if (t == 'x' || isdigit(t)
 			|| (t == '-' && isdigit((unsigned char)tokens[i][1]))
 			|| t == '.')
 		{
@@ -50,8 +53,8 @@ TokenData shunting_yard(TokenData _tokens)
 			continue;
 		}
 		
-		// y mi even writting ts bruh
-		else if (t == '(')
+		// token is trigonometry func or a (
+		else if (t == '(' || strchr("sct", t))
 		{
 			stack[si++] = tokens[i];
 			continue;
@@ -63,11 +66,15 @@ TokenData shunting_yard(TokenData _tokens)
 			while (*stack[si - 1] != '(')
 				output[oi++] = stack[--si];
 			--si; // discard '('
+
+			// add trigonometry to ouput too if any
+			if (si && strchr("sct", stack[si][0]))
+				output[oi++] = stack[--si];
 			continue;
 		}
-			
-		// token is an operand
-		while (si // stack is not empty
+	
+		// token is +, -, *, ^ or /
+		while (si
 			&& precedence(*stack[si - 1]) >= precedence(t) 
 			&& !(*stack[si - 1] == '^' && t == '^')) // equal precedence does not pop
 		{
@@ -108,8 +115,8 @@ Instr *prebake(TokenData _pftokens)
 	{
 		unsigned char t = (unsigned char)tokens[i][0];
 		
-		// variable
-		if (isalpha(t))
+		// argument
+		if (t == 'x')
 			program[pi] = (Instr){ .type = OP_VAR, .value = (double)(int)t};
 
 		// digit (incl. fractions)
@@ -127,6 +134,16 @@ Instr *prebake(TokenData _pftokens)
 			}
 			program[pi] = (Instr){ .type = OP_NUM, .value = v };
 		}
+
+		// trigonometry
+		else if (strcmp(tokens[i], "sin") == 0)
+			program[pi] = (Instr){ .type = OP_SIN };
+		else if (strcmp(tokens[i], "cos") == 0)
+			program[pi] = (Instr){ .type = OP_COS };
+		else if (strcmp(tokens[i], "tan") == 0)
+			program[pi] = (Instr){ .type = OP_TAN };
+		else if (strcmp(tokens[i], "cotan") == 0)
+			program[pi] = (Instr){ .type = OP_COTAN };
 
 		// operands
 		else if (t == '^') program[pi] = (Instr){ .type = OP_POW };
@@ -148,7 +165,8 @@ double evaluate(Instr *program, ValueStack *stack, double arg)
 	double *s = stack->values;
 	size_t sp = 0;
 
-	for (size_t i = 0; i < stack->msize; i++) {
+	for (size_t i = 0; i < stack->msize; i++)
+	{
 		switch (program[i].type) {
 		case OP_VAR:
 			s[sp++] = arg;
@@ -156,6 +174,22 @@ double evaluate(Instr *program, ValueStack *stack, double arg)
 
 		case OP_NUM:
 			s[sp++] = program[i].value;
+			break;
+
+		case OP_SIN:
+			s[sp - 1] = sin(s[sp - 1]);
+			break;
+
+		case OP_COS:
+			s[sp - 1] = cos(s[sp - 1]);
+			break;
+
+		case OP_TAN:
+			s[sp - 1] = tan(s[sp - 1]);
+			break;
+
+		case OP_COTAN:
+			s[sp - 1] = 1 / tan(s[sp - 1]);
 			break;
 
 		case OP_POW: {
