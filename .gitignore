@@ -1,0 +1,7 @@
+.vs
+cf2x/
+raylib-6.0_win64_msvc16/
+x64/
+cf2x.*
+*.zip
+tests.*
