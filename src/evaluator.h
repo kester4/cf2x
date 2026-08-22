@@ -18,7 +18,11 @@ typedef enum
 	OP_SUB,
 	OP_MUL,
 	OP_DIV,
-	OP_POW
+	OP_POW,
+	OP_SIN,
+	OP_COS,
+	OP_TAN,
+	OP_COTAN
 } OpType;
 
 

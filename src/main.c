@@ -432,9 +432,13 @@ void update_plot(Input *input)
 	else
 		input->valid = false;
 }
-
+#include "../tests.h"
 int main(void)
 {
+	char test[] = "-xxcotan(x)xcos(sin(cos(tan(cotan(22.2x)))))^xtan(-1)";
+	test_complex();
+	//test_complex();
+	return;
 	Font font;
 	RenderTexture2D plots_cache;
 	Input inputs[MAX_EQUATIONS] = { 0 };

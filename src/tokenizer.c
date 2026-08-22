@@ -4,7 +4,7 @@
 static int trimw_prevalidate(char *raw_str)
 {
 	// Check whenever there are invalid sequences, e.g:
-	// "x + 2 3", "x x" or "x    2"
+	// "alnum <space> alnum", or "cos (x )"
 	// before getting rid of whitespaces
 	// Note: "- x" is still allowed
 	char* start = raw_str;
@@ -24,7 +24,8 @@ static int trimw_prevalidate(char *raw_str)
 
 			was_letter = is_letter;
 		}
-
+		else if (!isspace(x))
+			was_letter = false;
 		was_space = isspace(x);
 		raw_str++;
 	}
@@ -43,38 +44,44 @@ static int trimw_prevalidate(char *raw_str)
 	return 0;
 }
 
-
 long validate(char *raw_str)
 {
 	if (trimw_prevalidate(raw_str) == -2)
 		return -3;
 
-	const size_t length = strlen(raw_str);
+	const long length = (long)strlen(raw_str);
 	if (length == 0)
 		return -2;
 	else if (length > MSTRLEN)
 		return -4;
 	else if (length == 1)
-		return isalnum(raw_str[0]) ? -1 : 0;
+		return (isdigit(raw_str[0]) || raw_str[0] == 'x') ? -1 : 0;
 
-	char arg;
 	int bracket_depth = 0;
-	bool argmet = false;
 	bool unclosed_sign = false;
 
-	for (long i = 0; i < (long)length; ++i)
+	for (long i = 0; i < length; ++i)
 	{
 		unsigned char curr = (unsigned char)raw_str[i];
-		unsigned char next = (i + 1 < (long)length) ? (unsigned char)raw_str[i + 1] : '\0';
+		unsigned char next = (i + 1 < length) ? (unsigned char)raw_str[i + 1] : '\0';
 
 		if (isalpha(curr))
 		{
-			if (!argmet) { argmet = true; arg = curr; }
-			else if (arg != curr) // different arg letter met (only single letter allowed)
-				return i;
-			if (isdigit(next) || next == '.')
-				return i;
 			unclosed_sign = false;
+			if (curr == 'x')
+			{
+				if (isdigit(next) || next == '.')
+					return i;
+				continue;
+			}
+			
+			size_t left = length - i;
+			if      (left >= 4 && strncmp(raw_str + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 4 && strncmp(raw_str + i, "cos(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 4 && strncmp(raw_str + i, "tan(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 6 && strncmp(raw_str + i, "cotan(", 6) == 0) { ++bracket_depth; i += 5; }
+			else
+				return i;
 		}
 
 		else if (isdigit(curr))
@@ -94,18 +101,18 @@ long validate(char *raw_str)
 
 		else if (curr == ')')
 		{
-			if (bracket_depth-- <= 0 || isalnum(next))
+			if (bracket_depth-- <= 0)
 				return i;
 		}
 
 		else if (curr == '+' || curr == '-' || curr == '*' || curr == '/')
 		{
-			// only minus sign is alowed at the very beginning
+			// minus sign is alowed at the very beginning
 			// or after opening bracket
 			if ((curr != '-') &&
 				(i == 0 || (i > 0 && raw_str[i - 1] == '(')))
 				return i;
-			if (unclosed_sign || i == (long)length - 1) 
+			if (unclosed_sign || i == length - 1) 
 				return i;
 			else
 				unclosed_sign = true;
@@ -180,22 +187,45 @@ TokenData tokenize(char *str)
 		unsigned char next = (unsigned char)str[i + 1];
 
 		// "-x" at the very begining or after "("
-		if (isalpha(curr) && i > 0 && str[i - 1] == '-' && (i == 1 || str[i - 2] == '('))
+		if (i > 0 && curr == 'x' && str[i - 1] == '-' && (i == 1 || str[i - 2] == '('))
 		{
 			strcpy(tokens[ti++], "0");
 			strcpy(tokens[ti++], "-");
 			chr_cpy(tokens, ti++, curr);
+			if (isalpha(next)) // short multiplication form expanding pt.1
+				chr_cpy(tokens, ti++, '*');
 		}
 		
-		// short multiplication form expanding
-		// "xx" -> "x * x",
-		// "x(..." -> "x * (..." and
-		else if (isalpha(curr) && (isalpha(next) || next == '(') && i < strl - 1)
+		// trigonometric function
+		else if (curr == 's' || curr == 'c' || curr == 't')
+		{
+			if (i + 5 < strl && str[i + 4] == 'n')
+			{
+				strcpy(tokens[ti++], "cotan");
+				i += 4;
+			}
+			// sin, cos, tan
+			else
+			{
+				tokens[ti][0] = curr;
+				tokens[ti][1] = next;
+				tokens[ti][2] = str[i + 2];
+				tokens[ti++][3] = '\0';
+				i += 2;
+			}
+		}
+
+		// short multiplication form expanding pt.2
+		// "xx" -> "x * x", "xfunc(..." -> "x * func(..."
+		// "x(..." -> "x * (..." and also ...
+		else if ((isalpha(curr) || curr == ')')
+			&& (isalpha(next) || next == '(')
+			&& i < strl - 1)
 		{
 			chr_cpy(tokens, ti++, curr);
 			chr_cpy(tokens, ti++, '*');
 		}
-		// ")(" -> ") * ("
+		// ... ")(" -> ") * ("
 		else if (curr == ')' && next == '(')
 		{
 			chr_cpy(tokens, ti++, ')');
@@ -203,8 +233,8 @@ TokenData tokenize(char *str)
 		}
 
 		// single operand, brackets or regular arg letter
-		// (also not a part of -<NUM> in the beginning)
-		else if (isalpha(curr) || curr == '(' || curr == ')'
+		// (also not a part of -<...> at the beginning)
+		else if (curr == 'x' || curr == '(' || curr == ')'
 			|| (i != 0 && is_operand(curr)))
 			chr_cpy(tokens, ti++, curr);
 
