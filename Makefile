@@ -1,10 +1,18 @@
 CC = gcc
 CFLAGS = -O3 -march=native -mtune=native -std=c99 -Wall -Wextra -Wpedantic
-LDFLAGS = -lraylib -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon -lGL -lm -lpthread -ldl -lrt
+LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt
 
 SRC_DIR = src
 BUILD_DIR = build
 BIN_DIR = bin
+
+ifeq ($(XDG_SESSION_TYPE), wayland)
+	LDFLAGS += -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
+endif
+
+ifeq ($(XDG_SESSION_TYPE), x11)
+	LDFLAGS += -lX11
+endif
 
 SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/tokenizer.c $(SRC_DIR)/evaluator.c
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
