@@ -4,6 +4,7 @@ LDFLAGS = -lraylib -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon -
 
 SRC_DIR = src
 BUILD_DIR = build
+BIN_DIR = bin
 
 SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/tokenizer.c $(SRC_DIR)/evaluator.c
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
