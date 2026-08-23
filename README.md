@@ -15,7 +15,7 @@
 - Render caching doesn't redraw canvas on every frame
 
 ### Current issues
-- \*Discontinuities such as `1/x + C`, where `C != 0` flattens out past some zoom-out level (adaptive sampling issue)
+- \*Discontinuities such as `1/x + C`, where `C != 0` or `2.71^x`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
 - No input panel vertical horizontal scrolling, so inputs can go past screen if there are too many
 - Memory leakes and crashes are possible, some equations can produce unexpected results
 
