@@ -80,7 +80,7 @@ long validate(char *raw_str)
 			if      (left >= 4 && strncmp(raw_str + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(raw_str + i, "cos(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(raw_str + i, "tan(", 4) == 0) { ++bracket_depth; i += 3; }
-			else if (left >= 6 && strncmp(raw_str + i, "cotan(", 6) == 0) { ++bracket_depth; i += 5; }
+			else if (left >= 4 && strncmp(raw_str + i, "cot(", 4) == 0) { ++bracket_depth; i += 3; }
 			else
 				return i;
 
@@ -204,20 +204,11 @@ TokenData tokenize(char *str)
 		// trigonometric function
 		else if (curr == 's' || curr == 'c' || curr == 't')
 		{
-			if (i + 5 < strl && str[i + 4] == 'n')
-			{
-				strcpy(tokens[ti++], "cotan");
-				i += 4;
-			}
-			// sin, cos, tan
-			else
-			{
-				tokens[ti][0] = curr;
-				tokens[ti][1] = next;
-				tokens[ti][2] = str[i + 2];
-				tokens[ti++][3] = '\0';
-				i += 2;
-			}
+			tokens[ti][0] = curr;
+			tokens[ti][1] = next;
+			tokens[ti][2] = str[i + 2];
+			tokens[ti++][3] = '\0';
+			i += 2;
 		}
 
 		// short multiplication form expanding pt.2

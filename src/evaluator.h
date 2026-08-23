@@ -22,7 +22,7 @@ typedef enum
 	OP_SIN,
 	OP_COS,
 	OP_TAN,
-	OP_COTAN
+	OP_COT
 } OpType;
 
 

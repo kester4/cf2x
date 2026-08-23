@@ -142,8 +142,8 @@ Instr *prebake(TokenData _pftokens)
 			program[pi] = (Instr){ .type = OP_COS };
 		else if (strcmp(tokens[i], "tan") == 0)
 			program[pi] = (Instr){ .type = OP_TAN };
-		else if (strcmp(tokens[i], "cotan") == 0)
-			program[pi] = (Instr){ .type = OP_COTAN };
+		else if (strcmp(tokens[i], "cot") == 0)
+			program[pi] = (Instr){ .type = OP_COT };
 
 		// operands
 		else if (t == '^') program[pi] = (Instr){ .type = OP_POW };
@@ -188,7 +188,7 @@ double evaluate(Instr *program, ValueStack *stack, double arg)
 			s[sp - 1] = tan(s[sp - 1]);
 			break;
 
-		case OP_COTAN:
+		case OP_COT:
 			s[sp - 1] = 1 / tan(s[sp - 1]);
 			break;
 

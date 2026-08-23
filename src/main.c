@@ -385,7 +385,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
-	Image icon = LoadImage("assets/icon.png");
+	Image icon = LoadImage("../assets/icon.png");
 	if (!icon.data)
 		printf("Failed to load icon\n");
 	else
@@ -395,7 +395,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 	
-	*font = LoadFont("assets/LiberationSans-Regular.ttf");
+	*font = LoadFont("../assets/LiberationSans-Regular.ttf");
 	*plots_cache = LoadRenderTexture(INITIAL_WIDTH * SSAA, INITIAL_HEIGHT * SSAA);
 	if (!plots_cache->id || !font->texture.id)
 	{
@@ -495,9 +495,10 @@ int main(void)
 		if (wheel != 0.0f && !on_input)
 		{
 			double factor = (wheel > 0) ? ZOOM_FACTOR : (1.0 / ZOOM_FACTOR);
-			Vector2 world_before = world_from_screen(view, mouse.x, mouse.y, w, h);
+			int w_real = (int)(w / INPUTBOX_REL);
+			Vector2 world_before = world_from_screen(view, mouse.x - w_real, mouse.y, w - w_real, h);
 			view.scale = CLAMP(view.scale * factor, 1e-5, 1e5);
-			Vector2 world_after = world_from_screen(view, mouse.x, mouse.y, w, h);
+			Vector2 world_after = world_from_screen(view, mouse.x - w_real, mouse.y, w - w_real, h);
 			view.x_offset += (world_before.x - world_after.x);
 			view.y_offset += (world_before.y - world_after.y);
 			changed = true;
@@ -554,7 +555,7 @@ int main(void)
 			{
 				inputs[active].text[len] = (char)c;
 				inputs[active].text[len + 1] = '\0';
-				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "cos");
+				bool periodic = strchr(inputs[active].text, 'n') || strchr(inputs[active].text, 'o');
 				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
@@ -566,7 +567,7 @@ int main(void)
 			if (len > 0)
 			{
 				inputs[active].text[len - 1] = '\0';
-				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "cos");
+				bool periodic = strchr(inputs[active].text, 'n') || strchr(inputs[active].text, 'o');
 				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
