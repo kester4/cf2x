@@ -550,11 +550,11 @@ int main(void)
 				inputs[active].capacity = new_len;
 			}
 
-			if (c >= 32 && c <= 125)
+			if (isdigit(c) || strchr("x+-*/^().sincosta", c))
 			{
 				inputs[active].text[len] = (char)c;
 				inputs[active].text[len + 1] = '\0';
-				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "sin");
+				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "cos");
 				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
@@ -566,7 +566,7 @@ int main(void)
 			if (len > 0)
 			{
 				inputs[active].text[len - 1] = '\0';
-				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "sin");
+				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "cos");
 				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
