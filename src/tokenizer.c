@@ -147,7 +147,7 @@ long validate(char *raw_str)
 }
 
 
-inline bool is_operand(unsigned char ch)
+bool is_operand(unsigned char ch)
 {
 	return ch == '^' || ch == '*' || ch == '/'
 		|| ch == '+' || ch == '-';

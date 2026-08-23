@@ -33,7 +33,7 @@ long validate(char *raw_str);
 
 
 // Checks whenever ch is ^, *, /, + or -
-inline bool is_operand(unsigned char ch);
+bool is_operand(unsigned char ch);
 
 
 // Returns pointer to a heap array of strings (char *),
