@@ -122,15 +122,24 @@ inline Vector2 world_from_screen(View v, float x, float y, int w, int h)
 Plot plot(char *valid_input)
 {
 	TokenData tokens = tokenize(valid_input);
+	if (!tokens.tokens)
+		return (Plot) { 0 };
+
 	TokenData postfix = shunting_yard(tokens);
+	if (!postfix.tokens)
+		return (Plot) { 0 };
 
 	double *values = malloc(sizeof(double) * postfix.size);
-	if (!values) {
-		free_tarray(postfix);
+	if (!values)
+		return (Plot) { 0 };
+
+	Instr *program = prebake(postfix);
+	if (!program)
+	{
+		free(values);
 		return (Plot) { 0 };
 	}
 
-	Instr *program = prebake(postfix);
 	return (Plot) {
 		.plot_program = program,
 		.plotp_length = postfix.size,
@@ -227,10 +236,9 @@ inline Sample sample(Instr *prog, ValueStack *vstack, View v, int w, int h, doub
 
 	return (Sample) {
 		.x = x,
-			.y = y,
-			.s = (Vector2){ (x - v.x_offset) * v.scale + w * 0.5,
-				valid ? h * 0.5 - (y - v.y_offset) * v.scale : 0.0f },
-			.valid = valid
+		.y = y,
+		.s = (Vector2){ (x - v.x_offset) * v.scale + w * 0.5, valid ? h * 0.5 - (y - v.y_offset) * v.scale : 0.0f },
+		.valid = valid
 	};
 }
 
@@ -401,7 +409,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	if (!plots_cache->id || !font->texture.id)
 	{
 		printf("Assets not loaded...\n");
-		return false;
+		// return false;
 	}
 	SetTextureFilter(font->texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(plots_cache->texture, TEXTURE_FILTER_BILINEAR);
@@ -451,10 +459,11 @@ void update_plot(Input *input, bool is_periodic)
 			input->plot = new;
 			input->valid = true;
 			input->periodic = is_periodic;
+			return;
 		}
 	}
-	else
-		input->valid = false;
+	// invalid input or malloc failure in plot()
+	input->valid = false;
 }
 
 int main(void)

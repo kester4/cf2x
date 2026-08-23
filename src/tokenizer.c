@@ -191,14 +191,13 @@ TokenData tokenize(char *str)
 		unsigned char curr = (unsigned char)str[i];
 		unsigned char next = (unsigned char)str[i + 1];
 
-		// "-x" at the very begining or after "("
-		if (i > 0 && curr == 'x' && str[i - 1] == '-' && (i == 1 || str[i - 2] == '('))
+		// "-x/-func" at the very begining or after "("
+		bool unary_minus = (curr == '-') && (i == 0 || str[i - 1] == '(');
+		if (unary_minus && !isdigit(next) && next != '.')
 		{
 			strcpy(tokens[ti++], "0");
 			strcpy(tokens[ti++], "-");
-			chr_cpy(tokens, ti++, curr);
-			if (isalpha(next)) // short multiplication form expanding pt.1
-				chr_cpy(tokens, ti++, '*');
+			continue;
 		}
 		
 		// trigonometric function
@@ -231,7 +230,7 @@ TokenData tokenize(char *str)
 		// single operand, brackets or regular arg letter
 		// (also not a part of -<...> at the beginning)
 		else if (curr == 'x' || curr == '(' || curr == ')'
-			|| (i != 0 && is_operand(curr)))
+			|| (i != 0 && is_operand(curr) && !unary_minus))
 			chr_cpy(tokens, ti++, curr);
 
 		// integer or fraction
@@ -239,8 +238,9 @@ TokenData tokenize(char *str)
 		{
 			size_t bi = 0;
 
-			// if it is first number and is negative
-			if (i == 1 && str[i - 1] == '-')
+			// unary minus pre dogit, like "(-1)"
+			if (i > 0 && str[i - 1] == '-'
+				&& (i == 1 || str[i - 2] == '('))
 				tokens[ti][bi++] = '-';
 
 			while (i < strl && (isdigit(str[i]) || str[i] == '.'))
