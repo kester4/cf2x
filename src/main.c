@@ -2,6 +2,7 @@
 #include "tokenizer.h"
 
 #include "raylib.h"
+#include "rlgl.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -385,7 +386,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
-	Image icon = LoadImage("../assets/icon.png");
+	Image icon = LoadImage("assets/icon.png");
 	if (!icon.data)
 		printf("Failed to load icon\n");
 	else
@@ -395,7 +396,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 	
-	*font = LoadFont("../assets/LiberationSans-Regular.ttf");
+	*font = LoadFont("assets/LiberationSans-Regular.ttf");
 	*plots_cache = LoadRenderTexture(INITIAL_WIDTH * SSAA, INITIAL_HEIGHT * SSAA);
 	if (!plots_cache->id || !font->texture.id)
 	{
@@ -495,10 +496,10 @@ int main(void)
 		if (wheel != 0.0f && !on_input)
 		{
 			double factor = (wheel > 0) ? ZOOM_FACTOR : (1.0 / ZOOM_FACTOR);
-			int w_real = (int)(w / INPUTBOX_REL);
-			Vector2 world_before = world_from_screen(view, mouse.x - w_real, mouse.y, w - w_real, h);
+			int w_inp = (int)(w / INPUTBOX_REL);
+			Vector2 world_before = world_from_screen(view, mouse.x - w_inp, mouse.y, w - w_inp, h);
 			view.scale = CLAMP(view.scale * factor, 1e-5, 1e5);
-			Vector2 world_after = world_from_screen(view, mouse.x - w_real, mouse.y, w - w_real, h);
+			Vector2 world_after = world_from_screen(view, mouse.x - w_inp, mouse.y, w - w_inp, h);
 			view.x_offset += (world_before.x - world_after.x);
 			view.y_offset += (world_before.y - world_after.y);
 			changed = true;
@@ -603,18 +604,25 @@ int main(void)
 		{
 			View ssaaView = view;
 			ssaaView.scale = view.scale * SSAA;
-			int sW = (w + w / INPUTBOX_REL) * SSAA;
+
+			int  input_w = (w / INPUTBOX_REL) * SSAA;
+			int canvas_w = w * SSAA - input_w;
 			int sH = h * SSAA;
 
 			BeginTextureMode(plots_cache);
 				ClearBackground(BGND_COLOR);
-				render_grid(ssaaView, font, sW, sH);
+				
+				rlPushMatrix();
+				rlTranslatef((float)input_w, 0.0f, 0.0f);
+				render_grid(ssaaView, font, canvas_w, sH);
 				for (size_t i = 0; i < total; ++i)
 				{
 					if (!inputs[i].valid)
 						continue;
-					render_plot(inputs[i].plot, ssaaView, sW, sH, color_cycle[i % 10], inputs[i].periodic);
+					render_plot(inputs[i].plot, ssaaView, canvas_w, sH, color_cycle[i % 10], inputs[i].periodic);
 				}
+				rlPopMatrix();
+
 				render_menu(w, h, font, inputs, total, active);
 			EndTextureMode();
 
