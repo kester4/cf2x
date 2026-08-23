@@ -34,7 +34,7 @@
 #define   MAJORL_THICK (2)
 #define  INITIAL_SCALE (30.0)
 #define    ZOOM_FACTOR (1.1)
-#define  PERIODIC_FUNC (8.0f)     // see render_plot)(
+#define  PERIODIC_FUNC (8.0f)     // see render_plot()
 
 // static color pallete
 #define     BGND_COLOR ((Color){ 245, 245, 245, 255 })
@@ -89,16 +89,16 @@ typedef struct
 } Input;
 
 static const Color color_cycle[] = {
-	{  31, 119, 180, 255 }, // blue
-	{ 255, 127,  14, 255 }, // orange
-	{  44, 160,  44, 255 }, // green
+	{  45, 117, 180, 255 }, // blue
 	{ 214,  39,  40, 255 }, // red
+	{  44, 160,  44, 255 }, // green
 	{ 148, 103, 189, 255 }, // purple
-	{ 140,  86,  75, 255 }, // brown
+	{ 255, 200, 0, 255 }, // yellow
+	{   0,   0,   0, 255 }, // black
 	{ 227, 119, 194, 255 }, // pink
 	{ 127, 127, 127, 255 }, // gray
-	{ 188, 189,  34, 255 }, // olive
-	{  23, 190, 207, 255 }  // cyan
+	{  23, 190, 207, 255 }, // cyan
+	{ 140,  93,  62, 255 }  // brown
 };
 
 inline Vector2 screen_from_world(View v, double x, double y, int w, int h)
