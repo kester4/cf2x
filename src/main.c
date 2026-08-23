@@ -33,6 +33,7 @@
 #define   MAJORL_THICK (2)
 #define  INITIAL_SCALE (30.0)
 #define    ZOOM_FACTOR (1.1)
+#define  PERIODIC_FUNC (8.0f)     // see render_plot)(
 
 // static color pallete
 #define     BGND_COLOR ((Color){ 245, 245, 245, 255 })
@@ -83,6 +84,7 @@ typedef struct
 	char   *text;
 	size_t capacity;
 	bool   valid;
+	bool   periodic;
 } Input;
 
 static const Color color_cycle[] = {
@@ -275,7 +277,7 @@ void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, Sample p
 	refine_plot(prog, vstack, v, w, h, mid, curr, depth + 1, color);
 }
 
-void render_plot(Plot p, View v, int w, int h, Color color)
+void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic)
 {
 	ValueStack vstack = (ValueStack){
 		.msize = p.plotp_length,
@@ -283,17 +285,37 @@ void render_plot(Plot p, View v, int w, int h, Color color)
 	};
 
 	// initially only 2 points on different sides of the
-	// screen are needed as we're going to make more with
-	// adaptive sampling
+	// screen are needed (!not for sin/cos) as we're
+	// going to make more with adaptive sampling
 	double x_start = v.x_offset - (0.5 * w) / v.scale;
 	double   x_end = v.x_offset + (0.5 * w) / v.scale;
 
-	refine_plot(
-		p.plot_program, &vstack, v, w, h,
-		sample(p.plot_program, &vstack, v, w, h, x_start),
-		sample(p.plot_program, &vstack, v, w, h, x_end),
-		0, color
-	);
+	if (!is_periodic)
+	{
+		refine_plot(
+			p.plot_program, &vstack, v, w, h,
+			sample(p.plot_program, &vstack, v, w, h, x_start),
+			sample(p.plot_program, &vstack, v, w, h, x_end),
+			0, color
+		);
+		return;
+	}
+
+	// for sin(x)/cos(x) we re gonna need more initial samples
+	// now thier amount becomes (width / PERIODIC_FUNC)
+	const int N = (int)ceil(w / PERIODIC_FUNC);
+	double step = (x_end - x_start) / N;
+
+	Sample left = sample(p.plot_program, &vstack, v, w, h, x_start);
+	for (int i = 1; i < N; ++i)
+	{
+		x_start += step;
+
+		Sample right = sample(p.plot_program, &vstack, v, w, h, x_start);
+		refine_plot(p.plot_program, &vstack, v, w, h, left, right, 0, color);
+
+		left = right;
+	}
 }
 
 inline Rectangle erase_button(int w, int h, int s)
@@ -417,7 +439,7 @@ void free_plots(size_t *size, Input *inputs)
 	}
 }
 
-void update_plot(Input *input)
+void update_plot(Input *input, bool is_periodic)
 {
 	if (validate(input->text) == -1)
 	{
@@ -427,17 +449,15 @@ void update_plot(Input *input)
 			free_plot(&input->plot); // previous
 			input->plot = new;
 			input->valid = true;
+			input->periodic = is_periodic;
 		}
 	}
 	else
 		input->valid = false;
 }
-#include "../tests.h"
+
 int main(void)
 {
-	char test[] = "3 + 2 * (sin(x + 1))^2 - cos(x / 2)";
-	test_simple(test, 2.0);
-	return;
 	Font font;
 	RenderTexture2D plots_cache;
 	Input inputs[MAX_EQUATIONS] = { 0 };
@@ -530,11 +550,12 @@ int main(void)
 				inputs[active].capacity = new_len;
 			}
 
-			if ((c >= '0' && c <= '9') || strchr("x+-*/^().", c))
+			if (c >= 32 && c <= 125)
 			{
 				inputs[active].text[len] = (char)c;
 				inputs[active].text[len + 1] = '\0';
-				update_plot(&inputs[active]);
+				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "sin");
+				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
 		}
@@ -545,7 +566,8 @@ int main(void)
 			if (len > 0)
 			{
 				inputs[active].text[len - 1] = '\0';
-				update_plot(&inputs[active]);
+				bool periodic = strstr(inputs[active].text, "sin") || strstr(inputs[active].text, "sin");
+				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
 		}
@@ -590,7 +612,7 @@ int main(void)
 				{
 					if (!inputs[i].valid)
 						continue;
-					render_plot(inputs[i].plot, ssaaView, sW, sH, color_cycle[i % 10]);
+					render_plot(inputs[i].plot, ssaaView, sW, sH, color_cycle[i % 10], inputs[i].periodic);
 				}
 				render_menu(w, h, font, inputs, total, active);
 			EndTextureMode();
