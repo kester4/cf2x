@@ -36,6 +36,7 @@ make run
 - `Enter` on the lowest equation to add a new one 
 - `Ctrl + R` to reset zoom and pan to defaults
 - `R` to reset pan
+- `Up`, `Down`, `Left`, `Right` for input menu navigation
 
 ### TODO
 - [ ] Add ~~horizontal~~/vertical scrolling to the input menu  
