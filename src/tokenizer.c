@@ -154,7 +154,7 @@ bool is_operand(unsigned char ch)
 }
 
 
-static inline void chr_cpy(char **arr, size_t idx, unsigned char src)
+static  void chr_cpy(char **arr, size_t idx, unsigned char src)
 {
 	arr[idx][0] = src;
 	arr[idx][1] = '\0';

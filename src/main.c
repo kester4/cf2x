@@ -50,7 +50,7 @@
 #define   MAX_SHORTVAL (1e5)
 #define      FONT_SIZE (20.0f)
 
-// adaptive funciton sampling
+// adaptive function sampling
 #define   MAX_RECDEPTH (55)    
 #define   TOLERANCE_PX (0.35f)
 
@@ -101,7 +101,25 @@ static const Color color_cycle[] = {
 	{ 140,  93,  62, 255 }  // brown
 };
 
-inline Vector2 screen_from_world(View v, double x, double y, int w, int h)
+Vector2 screen_from_world(View v, double x, double y, int w, int h);
+Vector2 world_from_screen(View v, float x, float y, int w, int h);
+Plot plot(char *valid_input);
+static char *format(double scale, double number, double step);
+void render_grid(View v, Font f, int w, int h);
+Sample sample(Instr *prog, ValueStack *vstack, View v, int w, int h, double x);
+bool on_screen(Sample prev, Sample curr, int h);
+void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, Sample prev, Sample curr, int depth, Color color);
+void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic);
+Rectangle erase_button(int w, int h, int s);
+Rectangle input_box(int w, int h, int s, size_t i);
+void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active);
+bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs);
+void free_plot(Plot *p);
+void free_plots(size_t *size, Input *inputs);
+void free_exit(size_t *total, Input *inputs, RenderTexture2D *plots_cache, Font *font);
+void update_plot(Input *input, bool is_periodic);
+
+Vector2 screen_from_world(View v, double x, double y, int w, int h)
 {
 	return (Vector2)
 	{
@@ -110,7 +128,7 @@ inline Vector2 screen_from_world(View v, double x, double y, int w, int h)
 	};
 }
 
-inline Vector2 world_from_screen(View v, float x, float y, int w, int h)
+Vector2 world_from_screen(View v, float x, float y, int w, int h)
 {
 	return (Vector2)
 	{
@@ -131,12 +149,16 @@ Plot plot(char *valid_input)
 
 	double *values = malloc(sizeof(double) * postfix.size);
 	if (!values)
+	{
+		free_tarray(postfix);
 		return (Plot) { 0 };
+	}
 
 	Instr *program = prebake(postfix);
 	if (!program)
 	{
 		free(values);
+		free_tarray(postfix);
 		return (Plot) { 0 };
 	}
 
@@ -229,7 +251,7 @@ void render_grid(View v, Font f, int w, int h)
 	DrawLineEx((Vector2) { center.x, 0 }, (Vector2) { center.x, h }, AXIS_THICK * SSAA, AXIS_COLOR);
 }
 
-inline Sample sample(Instr *prog, ValueStack *vstack, View v, int w, int h, double x)
+Sample sample(Instr *prog, ValueStack *vstack, View v, int w, int h, double x)
 {
 	double y = evaluate(prog, vstack, x);
 	bool valid = isfinite(y);
@@ -265,7 +287,7 @@ void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, Sample p
 	if (depth >= MAX_RECDEPTH)
 	{
 		if (on_screen(prev, curr, h))
-			DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK *SSAA, color);
+			DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK * SSAA, color);
 		return;
 	}
 
@@ -278,7 +300,7 @@ void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, Sample p
 
 	if (on_screen(prev, curr, h) && !split)
 	{
-		DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK *SSAA, color);
+		DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK * SSAA, color);
 		return;
 	}
 
@@ -310,8 +332,8 @@ void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic)
 		return;
 	}
 
-	// for sin(x)/cos(x) we re gonna need more initial samples
-	// now thier amount becomes (width / PERIODIC_FUNC)
+	// for sin(x)/cos(x), we need more initial samples
+	// their amount now becomes (width / PERIODIC_FUNC)
 	const int N = (int)ceil(w / PERIODIC_FUNC);
 	double step = (x_end - x_start) / N;
 
@@ -327,7 +349,7 @@ void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic)
 	}
 }
 
-inline Rectangle erase_button(int w, int h, int s)
+Rectangle erase_button(int w, int h, int s)
 {
 	float box_w = (float)(w / INPUTBOX_REL) * s;
 	float bar_h = INPUT_HEAD_REL * (float)h * s;
@@ -335,7 +357,7 @@ inline Rectangle erase_button(int w, int h, int s)
 	return (Rectangle){box_w * 0.69f, bar_h * 0.25f, box_w * 0.26f, bar_h * 0.5f};
 }
 
-inline Rectangle input_box(int w, int h, int s, size_t i)
+Rectangle input_box(int w, int h, int s, size_t i)
 {
 	float box_w = (float)(w / INPUTBOX_REL) * s;
 	float box_h = (float)h * INPUT_H_REL * s;
@@ -394,9 +416,9 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
-	Image icon = LoadImage("assets/icon.png");
+	Image icon = LoadImage("../assets/icon.png");
 	if (!icon.data)
-		printf("Failed to load icon\n");
+		printf("[!] Failed to load icon!\n");
 	else
 	{
 		ImageFormat(&icon, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
@@ -404,23 +426,32 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 	
-	*font = LoadFont("assets/LiberationSans-Regular.ttf");
+	*font = LoadFont("../assets/LiberationSans-Regular.ttf");
+	if (font->texture.id == 0)
+		printf("[!] Missing fonts!\n");
+	else
+		SetTextureFilter(font->texture, TEXTURE_FILTER_BILINEAR);
+
 	*plots_cache = LoadRenderTexture(INITIAL_WIDTH * SSAA, INITIAL_HEIGHT * SSAA);
-	if (!plots_cache->id || !font->texture.id)
+	if (plots_cache->id == 0)
 	{
-		printf("Assets not loaded...\n");
-		// return false;
+		free_exit(NULL, inputs, plots_cache, font);
+		printf("[!!!] Error loading render texture (try setting SSAA to 1), exiting...\n");
+		return false;
 	}
-	SetTextureFilter(font->texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(plots_cache->texture, TEXTURE_FILTER_BILINEAR);
 
 	for (size_t i = 0; i < MAX_EQUATIONS; ++i)
 	{
 		inputs[i].text = malloc(INPUTLEN_INIT);
 		if (!inputs[i].text)
+		{
+			// free past successful mallocs and exit(-1)
+			for (size_t j = 0; j < i; ++j)
+				free(inputs[j].text);
+			free_exit(NULL, inputs, plots_cache, font);
 			return false;
-		// yea i know ideally we should free past successful
-		// mallocs on failure but app is going to be exit(-1) anyway
+		}
 		inputs[i].text[0] = '\0';
 		inputs[i].capacity = INPUTLEN_INIT;
 	}
@@ -448,6 +479,18 @@ void free_plots(size_t *size, Input *inputs)
 	}
 }
 
+void free_exit(size_t *total, Input *inputs, RenderTexture2D *plots_cache, Font *font)
+{
+	if (total)
+		free_plots(total, inputs);
+	for (size_t i = 0; total && i < MAX_EQUATIONS; ++i)
+		free(inputs[i].text);
+	if (font && font->texture.id)
+		UnloadFont(*font);
+	if (plots_cache && plots_cache->texture.id)
+		UnloadRenderTexture(*plots_cache);
+}
+
 void update_plot(Input *input, bool is_periodic)
 {
 	if (validate(input->text) == -1)
@@ -464,6 +507,7 @@ void update_plot(Input *input, bool is_periodic)
 	}
 	// invalid input or malloc failure in plot()
 	input->valid = false;
+	input->periodic = false;
 }
 
 int main(void)
@@ -490,7 +534,7 @@ int main(void)
 		bool on_input = mouse.x < (float)(w / INPUTBOX_REL);
 
 		// pan
-		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) & !on_input)
+		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !on_input)
 		{
 			Vector2 delta = GetMouseDelta();
 			if (delta.x || delta.y)
@@ -561,7 +605,7 @@ int main(void)
 				inputs[active].capacity = new_len;
 			}
 
-			if (isdigit(c) || strchr("x+-*/^().sincosta", c))
+			if (isdigit((unsigned char)c) || strchr("x+-*/^().sincosta", c))
 			{
 				inputs[active].text[len] = (char)c;
 				inputs[active].text[len + 1] = '\0';
@@ -605,6 +649,11 @@ int main(void)
 		{
 			UnloadRenderTexture(plots_cache);
 			plots_cache = LoadRenderTexture(w * SSAA, h * SSAA);
+			if (plots_cache.id == 0)
+			{
+				printf("[!!!] Error loading render texture (try setting SSAA to 1), exiting...\n");
+				break;
+			}
 			SetTextureFilter(plots_cache.texture, TEXTURE_FILTER_BILINEAR);
 			changed = true;
 		}
@@ -647,8 +696,7 @@ int main(void)
 		EndDrawing();
 	}
 
-	free_plots(&total, inputs);
+	free_exit(&total, inputs, &plots_cache, &font);
 	CloseWindow();
-
 	return 0;
 }

@@ -1,7 +1,7 @@
 #include "evaluator.h"
 #include "tokenizer.h"
 
-static inline unsigned int precedence(char op)
+static  unsigned int precedence(char op)
 {
 	switch (op)
 	{

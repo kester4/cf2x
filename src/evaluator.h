@@ -41,13 +41,23 @@ typedef struct
 } ValueStack;
 
 
+// Shunting-yard's infix token array to postfix
+// token array, frees the infix array
 //
+// Returns newly malloc'd postfix TokenData or
+//         empty TokenData on malloc failure
 TokenData shunting_yard(TokenData _tokens);
 
 
+// Converts postfix tokens into Instr array,
+// strtol's numeric tokens to doubles so it is 
+// done once not per every evaluate() call
 //
+// Returns newly malloc'd Instr array or
+//         NULL if malloc fails or a number is
+//         too long for a double
 Instr *prebake(TokenData _pftokens);
 
 
-//
+// RPN's Instr array for the given arg value
 double evaluate(Instr *program, ValueStack *stack, double arg);

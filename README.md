@@ -7,7 +7,7 @@
 </div>
 
 ### Features
-- Supports single-variable equations with brackets, math operans and trigonometric funtions: `sin`, `cos`, `tan`, `cot`
+- Supports single-variable equations with brackets, math operans and trigonometric functions: `sin`, `cos`, `tan`, `cot`
 - Is able to parse implicit multiplication and unary negation (shunting yard parser with RPN evaluator)
 - Uses recursive adaptive sampling to handle\* curvature plots
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels
@@ -16,8 +16,8 @@
 
 ### Current issues
 - \*Discontinuities such as `1/x + C`, where `C != 0` or `2.71^x`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
-- No input panel vertical horizontal scrolling, so inputs can go past screen if there are too many
-- Memory leakes and crashes are possible, some equations can produce unexpected results
+- No input panel vertical / horizontal scrolling, so inputs can go past screen if there are too many
+- Memory leakes and crashes are possible, some equations may produce unexpected results
 
 ### Installation
 1) Install [Raylib](https://github.com/raysan5/raylib)
