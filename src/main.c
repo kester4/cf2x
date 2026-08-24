@@ -460,7 +460,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
-	Image icon = LoadImage("assets/icon.png");
+	Image icon = LoadImage("../assets/icon.png");
 	if (!icon.data)
 		printf("[!] Failed to load icon!\n");
 	else
@@ -470,7 +470,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 	
-	*font = LoadFont("assets/LiberationSans-Regular.ttf");
+	*font = LoadFont("../assets/LiberationSans-Regular.ttf");
 	if (font->texture.id == 0)
 		printf("[!] Missing fonts!\n");
 	else
