@@ -23,7 +23,7 @@
 #define    INPUT_H_REL (0.067f)   // single input field : full inputs column (height)
 // sizes
 #define   INPUTB_THICK (2) 
-#define INPUTB_PADDING (4)
+#define INPUTB_PADDING (15.0f)
 
 // plotting canvas parameters
 #define   GRID_SPACING (140)
@@ -86,6 +86,8 @@ typedef struct
 	size_t capacity;
 	bool   valid;
 	bool   periodic;
+	size_t caret;
+	float  scroll;
 } Input;
 
 static const Color color_cycle[] = {
@@ -388,17 +390,13 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 		font_size, 0.0f, TEXT_COLOR);
 
 	font_size *= 1.3f;
+	// blinking carret every half of a second
+	bool carret = ((int)(GetTime() / 0.5) % 2 == 0);
 	for (size_t i = 0; i < size; ++i)
 	{
-		// strcpy(inputs[i].text, "debug");
 		Rectangle ci = input_box(w, h, SSAA, i);
-
-		// same for every user input (line 332)
-		text_size = MeasureTextEx(f, inputs[i].text, font_size, 0.0f);
-		Vector2 fp = (Vector2){ ci.width * 0.14f, ci.y + (ci.height - text_size.y) * 0.5f};
-
 		DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? DARKGRAY : LIGHTGRAY);
-		DrawTextEx(f, inputs[i].text, fp, font_size, 0.0f, TEXT_COLOR);
+		
 		if (inputs[i].valid)
 			DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, color_cycle[i % 10]);
 		else
@@ -407,6 +405,52 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 			DrawRectangleRec(warning, ORANGE);
 			DrawCircle(warning.x + warning.width * 0.52f, warning.y + warning.height * 1.45f, warning.width * 0.6f, ORANGE);
 		}
+
+		// circle indicator will be between text and x_screen=0
+		text_size = MeasureTextEx(f, inputs[i].text, font_size, 0.0f);
+		Vector2 font_pos = (Vector2){ ci.width * 0.14f, ci.y + (ci.height - text_size.y) * 0.5f };
+
+		// turns out lib sans is proposional, so we can't char width * caret
+		char until = inputs[i].text[inputs[i].caret];
+		inputs[i].text[inputs[i].caret] = '\0';
+		float caret_x = MeasureTextEx(f, inputs[i].text, font_size, 0.0f).x;
+		inputs[i].text[inputs[i].caret] = until;
+
+		// [font_pos.x, render_canvas_beginning]
+		float visible_w = ci.width - font_pos.x - INPUTB_PADDING * SSAA;;
+		if (visible_w <= 0.0f)
+			visible_w = 0.0f;
+
+		if (text_size.x <= visible_w) // doesn't go past input width
+			inputs[i].scroll = 0.0f;
+		else
+		{
+			if (caret_x - inputs[i].scroll > visible_w)
+				inputs[i].scroll = caret_x - visible_w;
+			if (caret_x - inputs[i].scroll < 0.0f)
+				inputs[i].scroll = caret_x;
+			if (inputs[i].scroll > text_size.x - visible_w)
+				inputs[i].scroll = text_size.x - visible_w;
+			if (inputs[i].scroll < 0.0f)
+				inputs[i].scroll = 0.0f;
+		}
+
+		BeginScissorMode((int)font_pos.x - SSAA, (int)ci.y, (int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)ci.height);
+			DrawTextEx(f, inputs[i].text,
+				(Vector2) { font_pos.x - inputs[i].scroll, font_pos.y},
+				font_size, 0.0f, TEXT_COLOR);
+
+			// draw carret if input box is focused
+			if (i == active && carret)
+			{
+				float caret_y = font_pos.y - SSAA;
+				if (text_size.x == 0.0f)
+					caret_y += (ci.height - MeasureTextEx(f, "|", font_size, 0.0f).y) * 0.5f - ci.height * 0.5f;
+
+				Vector2 carret_pos = (Vector2){ font_pos.x - inputs[i].scroll + caret_x - 3.0f * SSAA, caret_y };
+				DrawTextEx(f, "|", carret_pos, font_size, 0.0f, TEXT_COLOR);
+			}
+		EndScissorMode();
 	}
 }
 
@@ -416,7 +460,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
-	Image icon = LoadImage("../assets/icon.png");
+	Image icon = LoadImage("assets/icon.png");
 	if (!icon.data)
 		printf("[!] Failed to load icon!\n");
 	else
@@ -426,7 +470,7 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 	
-	*font = LoadFont("../assets/LiberationSans-Regular.ttf");
+	*font = LoadFont("assets/LiberationSans-Regular.ttf");
 	if (font->texture.id == 0)
 		printf("[!] Missing fonts!\n");
 	else
@@ -476,6 +520,8 @@ void free_plots(size_t *size, Input *inputs)
 		free_plot(&inputs[i].plot);
 		inputs[i].text[0] = '\0';
 		inputs[i].valid = false;
+		inputs[i].caret = 0;
+		inputs[i].scroll = 0.0f;
 	}
 }
 
@@ -590,6 +636,7 @@ int main(void)
 		}
 
 		// equations input
+		Input *inp = &(inputs[active]);
 		int c;
 		while ((c = GetCharPressed()) != 0)
 		{
@@ -607,8 +654,11 @@ int main(void)
 
 			if (isdigit((unsigned char)c) || strchr("x+-*/^().sincosta", c))
 			{
-				inputs[active].text[len] = (char)c;
-				inputs[active].text[len + 1] = '\0';
+				// shift andd insert at caret
+				memmove(inp->text + inp->caret + 1, inp->text + inp->caret, len - inp->caret + 1);
+				inp->text[inp->caret] = (char)c;
+				++(inp->caret);
+
 				bool periodic = strchr(inputs[active].text, 'n') || strchr(inputs[active].text, 'o');
 				update_plot(&inputs[active], periodic);
 				changed = true;
@@ -618,11 +668,49 @@ int main(void)
 		if (IsKeyPressedRepeat(KEY_BACKSPACE) || IsKeyPressed(KEY_BACKSPACE))
 		{
 			size_t len = strlen(inputs[active].text);
-			if (len > 0)
+			if (len > 0 && inputs[active].caret > 0)
 			{
-				inputs[active].text[len - 1] = '\0';
+				memmove(inp->text + inp->caret - 1, inp->text + inp->caret, len - inp->caret + 1);
+				--(inp->caret);
+
 				bool periodic = strchr(inputs[active].text, 'n') || strchr(inputs[active].text, 'o');
 				update_plot(&inputs[active], periodic);
+				changed = true;
+			}
+		}
+
+		// move caret on active input
+		if (IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))
+		{
+			if (inp->caret)
+			{
+				--(inp->caret);
+				changed = true;
+			}
+		}
+		if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))
+		{
+			if (inp->caret < strlen(inp->text))
+			{
+				++(inp->caret);
+				changed = true;
+			}
+		}
+
+		// input menu up/down navigation
+		if (IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP))
+		{
+			if (active < total && active > 0)
+			{
+				--active;
+				changed = true;
+			}
+		}
+		if (IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN))
+		{
+			if (active < total - 1)
+			{
+				++active;
 				changed = true;
 			}
 		}
@@ -681,11 +769,14 @@ int main(void)
 				}
 				rlPopMatrix();
 
-				render_menu(w, h, font, inputs, total, active);
 			EndTextureMode();
 
 			changed = false;
 		}
+
+		BeginTextureMode(plots_cache);
+			render_menu(w, h, font, inputs, total, active);
+		EndTextureMode();
 
 		BeginDrawing();
 			DrawTexturePro(plots_cache.texture,

@@ -16,7 +16,7 @@
 
 ### Current issues
 - \*Discontinuities such as `1/x + C`, where `C != 0` or `2.71^x`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
-- No input panel vertical / horizontal scrolling, so inputs can go past screen if there are too many
+- No input panel vertical scrolling, so inputs can go past screen if there are too many
 - Memory leakes and crashes are possible, some equations may produce unexpected results
 
 ### Installation
@@ -38,7 +38,7 @@ make run
 - `R` to reset pan
 
 ### TODO
-- [ ] Add horizontal/vertical scrolling to the input menu  
+- [ ] Add ~~horizontal~~/vertical scrolling to the input menu  
 - [ ] Make `refine_plot()` detect things like `1/x + C`  
 - [ ] Implement inserting new equations between already existing ones in the input menu
 - [ ] Split input menu and plot canvas into different textures 
