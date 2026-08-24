@@ -82,11 +82,11 @@ typedef struct
 typedef struct
 {
 	Plot   plot;
-	char   *text;
-	size_t capacity;
-	bool   valid;
-	bool   periodic;
-	size_t caret;
+	char   *text;    // user input
+	size_t capacity; // malloc'd size of text
+	bool   valid;    // plot validity
+	bool   periodic; 
+	size_t caret;    // caret pos
 	float  scroll;
 } Input;
 
@@ -390,8 +390,8 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 		font_size, 0.0f, TEXT_COLOR);
 
 	font_size *= 1.3f;
-	// blinking carret every half of a second
-	bool carret = ((int)(GetTime() / 0.5) % 2 == 0);
+	// blinking caret every half of a second
+	bool caret = ((int)(GetTime() / 0.5) % 2 == 0);
 	for (size_t i = 0; i < size; ++i)
 	{
 		Rectangle ci = input_box(w, h, SSAA, i);
@@ -440,15 +440,15 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 				(Vector2) { font_pos.x - inputs[i].scroll, font_pos.y},
 				font_size, 0.0f, TEXT_COLOR);
 
-			// draw carret if input box is focused
-			if (i == active && carret)
+			// draw caret if input box is focused
+			if (i == active && caret)
 			{
 				float caret_y = font_pos.y - SSAA;
 				if (text_size.x == 0.0f)
 					caret_y += (ci.height - MeasureTextEx(f, "|", font_size, 0.0f).y) * 0.5f - ci.height * 0.5f;
 
-				Vector2 carret_pos = (Vector2){ font_pos.x - inputs[i].scroll + caret_x - 3.0f * SSAA, caret_y };
-				DrawTextEx(f, "|", carret_pos, font_size, 0.0f, TEXT_COLOR);
+				Vector2 caret_pos = (Vector2){ font_pos.x - inputs[i].scroll + caret_x - 3.0f * SSAA, caret_y };
+				DrawTextEx(f, "|", caret_pos, font_size, 0.0f, TEXT_COLOR);
 			}
 		EndScissorMode();
 	}

@@ -102,6 +102,7 @@ long validate(char *raw_str)
 			if (!isalnum(next) && next != '(' && next != '-')
 				return i + 1;
 			++bracket_depth;
+			unclosed_sign = false;
 		}
 
 		else if (curr == ')')
@@ -117,7 +118,7 @@ long validate(char *raw_str)
 			if ((curr != '-') &&
 				(i == 0 || (i > 0 && raw_str[i - 1] == '(')))
 				return i;
-			if (unclosed_sign || i == length - 1) 
+			if (unclosed_sign || i == length - 1 || next == ')')
 				return i;
 			else
 				unclosed_sign = true;
