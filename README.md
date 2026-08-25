@@ -41,8 +41,7 @@ make run
 ### TODO
 - [ ] Add ~~horizontal~~/vertical scrolling to the input menu  
 - [ ] Make `refine_plot()` detect things like `1/x + C`  
-- [ ] Implement inserting new equations between already existing ones in the input menu
-- [ ] Split input menu and plot canvas into different textures 
+- [x] Implement inserting new equations between already existing ones in the input menu
 - [ ] Add `log`/`ln` and `exp` letter support  
 - [ ] Offload plots rendering to the GPU  
 - [ ] Add a dark theme

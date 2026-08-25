@@ -1,69 +1,65 @@
 #include "tokenizer.h"
 
 
-static int trimw_prevalidate(char *raw_str)
+static bool trimw_prevalidate(char *dst, char *src)
 {
-	// Check whenever there are invalid sequences, e.g:
-	// "alnum <space> alnum", or "cos (x )"
-	// before getting rid of whitespaces
+	// Check whenever there are invalid sequences,
+	// such as "alnum <space> alnum", or "cos (x )"
+	// before getting rid of whitespaces and
+	// writting trimmed string to dst buffer
+	// 
 	// Note: "- x" is still allowed
-	char* start = raw_str;
 	bool is_letter;
 	bool was_letter = false;
 	bool was_space = false;
-	while (*raw_str)
+
+	for (char *start = src; *start; ++start)
 	{
-		unsigned char x = (unsigned char)*raw_str;
+		unsigned char x = (unsigned char)*start;
 
 		if (isalnum(x) || is_operand(x))
 		{
 			is_letter = isalnum(x);
 
 			if (was_space && was_letter && is_letter)
-				return -2;
+				return false;
 
 			was_letter = is_letter;
 		}
 		else if (!isspace(x))
 			was_letter = false;
 		was_space = isspace(x);
-		raw_str++;
 	}
 
 	// trim whitespaces
-	raw_str = start;
-	char* dst = raw_str;
-	while (*raw_str)
+	for (char *start = src; *start; ++start)
 	{
-		if (!isspace((unsigned char)*raw_str))
-			*dst++ = *raw_str;
-		raw_str++;
+		if (!isspace((unsigned char)*start))
+			*dst++ = *start;
 	}
 
 	*dst = '\0';
-	return 0;
+	return true;
 }
 
-long validate(char *raw_str)
+bool validate(char *dst, char *src)
 {
-	if (trimw_prevalidate(raw_str) == -2)
-		return -3;
+	if (!trimw_prevalidate(dst, src))
+		return false;
 
-	const long length = (long)strlen(raw_str);
-	if (length == 0)
-		return -2;
-	else if (length > MSTRLEN)
-		return -4;
+	const size_t length = strlen(dst);
+	if (length == 0 || length > MSTRLEN)
+		return false;
 	else if (length == 1)
-		return (isdigit(raw_str[0]) || raw_str[0] == 'x') ? -1 : 0;
+		return (isdigit(dst[0]) || dst[0] == 'x');
 
 	int bracket_depth = 0;
 	bool unclosed_sign = false;
 
-	for (long i = 0; i < length; ++i)
+	for (size_t i = 0; i < length; ++i)
 	{
-		unsigned char curr = (unsigned char)raw_str[i];
-		unsigned char next = (i + 1 < length) ? (unsigned char)raw_str[i + 1] : '\0';
+		unsigned char curr = (unsigned char)dst[i];
+		unsigned char next = (i + 1 < length) ? (unsigned char)dst[i + 1] : '\0';
 
 		if (isalpha(curr))
 		{
@@ -71,44 +67,44 @@ long validate(char *raw_str)
 			if (curr == 'x')
 			{
 				if (isdigit(next) || next == '.')
-					return i;
+					return false;
 				continue;
 			}
 			
 			// trigonometry
 			size_t left = length - i;
-			if      (left >= 4 && strncmp(raw_str + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
-			else if (left >= 4 && strncmp(raw_str + i, "cos(", 4) == 0) { ++bracket_depth; i += 3; }
-			else if (left >= 4 && strncmp(raw_str + i, "tan(", 4) == 0) { ++bracket_depth; i += 3; }
-			else if (left >= 4 && strncmp(raw_str + i, "cot(", 4) == 0) { ++bracket_depth; i += 3; }
+			if      (left >= 4 && strncmp(dst + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 4 && strncmp(dst + i, "cos(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 4 && strncmp(dst + i, "tan(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 4 && strncmp(dst + i, "cot(", 4) == 0) { ++bracket_depth; i += 3; }
 			else
-				return i;
+				return false;
 
 			// blang trig_func() parens are not allowed
-			if (length - i >= 1 && raw_str[i + 1] == ')')
-				return i;
+			if (length - i >= 1 && dst[i + 1] == ')')
+				return false;
 		}
 
 		else if (isdigit(curr))
 		{
 			if (next && !isalnum(next) && !is_operand(next) 
 				&& next != '.' && next != '(' && next != ')')
-				return i;
+				return false;
 			unclosed_sign = false;
 		}
 
 		else if (curr == '(')
 		{
 			if (!isalnum(next) && next != '(' && next != '-')
-				return i + 1;
+				return false;
 			++bracket_depth;
 			unclosed_sign = false;
 		}
 
 		else if (curr == ')')
 		{
-			if (bracket_depth-- <= 0)
-				return i;
+			if (bracket_depth-- <= 0 || isdigit(next))
+				return false;
 		}
 
 		else if (curr == '+' || curr == '-' || curr == '*' || curr == '/')
@@ -116,10 +112,10 @@ long validate(char *raw_str)
 			// minus sign is alowed at the very beginning
 			// or after opening bracket
 			if ((curr != '-') &&
-				(i == 0 || (i > 0 && raw_str[i - 1] == '(')))
-				return i;
+				(i == 0 || (i > 0 && dst[i - 1] == '(')))
+				return false;
 			if (unclosed_sign || i == length - 1 || next == ')')
-				return i;
+				return false;
 			else
 				unclosed_sign = true;
 		}
@@ -127,24 +123,24 @@ long validate(char *raw_str)
 		else if (curr == '.')
 		{
 			if (!isdigit(next))
-				return i;
+				return false;
 			unclosed_sign = false;
 		}
 
 		else if (curr == '^')
 		{
 			if (i == 0)
-				return i;
+				return false;
 			if (!isalnum(next) && next != '.' && next != '(')
-				return i;
+				return false;
 			unclosed_sign = false;
 		}
 
 		else
-			return i;
+			return false;
 	}
 
-	return bracket_depth == 0 ? -1 : -3;
+	return (bracket_depth == 0);
 }
 
 

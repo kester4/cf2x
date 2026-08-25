@@ -24,12 +24,11 @@ typedef struct
 } TokenData;
 
 
-// Returns -1 if equation is valid,
-//         -2 if too small
-//		   -3 if invalid space sequences were presented,
-//         -4 if too long (exceeds MSTRLEN)
-// firstly met 'wrong' operator/operand index otherwise
-long validate(char *raw_str);
+// Checks if equation is valid,
+//        not too small
+//		  no invalid space sequences,
+//        not too long (exceeds MSTRLEN)
+bool validate(char *dst, char *src);
 
 
 // Checks whenever ch is ^, *, /, + or -

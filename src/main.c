@@ -82,12 +82,14 @@ typedef struct
 typedef struct
 {
 	Plot   plot;
-	char   *text;    // user input
+	char   *text;    
+	char   *origin;  // user input
 	size_t capacity; // malloc'd size of text
-	bool   valid;    // plot validity
-	bool   periodic; 
 	size_t caret;    // caret pos
+	bool   periodic;
+	bool   valid;
 	float  scroll;
+	Color  color;
 } Input;
 
 static const Color color_cycle[] = {
@@ -398,7 +400,7 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 		DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? DARKGRAY : LIGHTGRAY);
 		
 		if (inputs[i].valid)
-			DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, color_cycle[i % 10]);
+			DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, inputs[i].color);
 		else
 		{
 			Rectangle warning = (Rectangle){ ci.width * 0.073f, ci.y + ci.height * 0.3f, ci.height * 0.1f, ci.width * 0.05f };
@@ -407,14 +409,14 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 		}
 
 		// circle indicator will be between text and x_screen=0
-		text_size = MeasureTextEx(f, inputs[i].text, font_size, 0.0f);
+		text_size = MeasureTextEx(f, inputs[i].origin, font_size, 0.0f);
 		Vector2 font_pos = (Vector2){ ci.width * 0.14f, ci.y + (ci.height - text_size.y) * 0.5f };
 
 		// turns out lib sans is proposional, so we can't char width * caret
-		char until = inputs[i].text[inputs[i].caret];
-		inputs[i].text[inputs[i].caret] = '\0';
-		float caret_x = MeasureTextEx(f, inputs[i].text, font_size, 0.0f).x;
-		inputs[i].text[inputs[i].caret] = until;
+		char until = inputs[i].origin[inputs[i].caret];
+		inputs[i].origin[inputs[i].caret] = '\0';
+		float caret_x = MeasureTextEx(f, inputs[i].origin, font_size, 0.0f).x;
+		inputs[i].origin[inputs[i].caret] = until;
 
 		// [font_pos.x, render_canvas_beginning]
 		float visible_w = ci.width - font_pos.x - INPUTB_PADDING * SSAA;;
@@ -436,7 +438,7 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 		}
 
 		BeginScissorMode((int)font_pos.x - SSAA, (int)ci.y, (int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)ci.height);
-			DrawTextEx(f, inputs[i].text,
+			DrawTextEx(f, inputs[i].origin,
 				(Vector2) { font_pos.x - inputs[i].scroll, font_pos.y},
 				font_size, 0.0f, TEXT_COLOR);
 
@@ -488,18 +490,19 @@ bool init(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	for (size_t i = 0; i < MAX_EQUATIONS; ++i)
 	{
 		inputs[i].text = malloc(INPUTLEN_INIT);
-		if (!inputs[i].text)
+		inputs[i].origin = malloc(INPUTLEN_INIT);
+		if (!inputs[i].text || !inputs[i].origin)
 		{
-			// free past successful mallocs and exit(-1)
-			for (size_t j = 0; j < i; ++j)
-				free(inputs[j].text);
 			free_exit(NULL, inputs, plots_cache, font);
 			return false;
 		}
+
 		inputs[i].text[0] = '\0';
+		inputs[i].origin[0] = '\0';
 		inputs[i].capacity = INPUTLEN_INIT;
 	}
 
+	inputs[0].color = color_cycle[0];
 	return true;
 }
 
@@ -519,6 +522,7 @@ void free_plots(size_t *size, Input *inputs)
 	{
 		free_plot(&inputs[i].plot);
 		inputs[i].text[0] = '\0';
+		inputs[i].origin[0] = '\0';
 		inputs[i].valid = false;
 		inputs[i].caret = 0;
 		inputs[i].scroll = 0.0f;
@@ -530,7 +534,10 @@ void free_exit(size_t *total, Input *inputs, RenderTexture2D *plots_cache, Font 
 	if (total)
 		free_plots(total, inputs);
 	for (size_t i = 0; total && i < MAX_EQUATIONS; ++i)
+	{
 		free(inputs[i].text);
+		free(inputs[i].origin);
+	}
 	if (font && font->texture.id)
 		UnloadFont(*font);
 	if (plots_cache && plots_cache->texture.id)
@@ -539,7 +546,7 @@ void free_exit(size_t *total, Input *inputs, RenderTexture2D *plots_cache, Font 
 
 void update_plot(Input *input, bool is_periodic)
 {
-	if (validate(input->text) == -1)
+	if (validate(input->text, input->origin))
 	{
 		Plot new = plot(input->text);
 		if (new.values)
@@ -567,6 +574,7 @@ int main(void)
 	
 	size_t  total = 1;
 	size_t active = 0;
+	size_t next_color = 1;
 
 	bool changed = true;
 	View view = { 0.0, 0.0, INITIAL_SCALE };
@@ -618,6 +626,7 @@ int main(void)
 				free_plots(&total, inputs);
 				active = 0;
 				total = 1;
+				next_color = 1;
 				changed = true;
 			}
 
@@ -640,26 +649,32 @@ int main(void)
 		int c;
 		while ((c = GetCharPressed()) != 0)
 		{
-			size_t len = strlen(inputs[active].text);
+			size_t len = strlen(inputs[active].origin);
 			if (len + 1 >= inputs[active].capacity)
 			{
 				size_t new_len = inputs[active].capacity * 2;
+					
 				char *new_text = realloc(inputs[active].text, new_len);
 				if (!new_text)
 					break;
-
 				inputs[active].text = new_text;
+
+				char *new_orig = realloc(inputs[active].origin, new_len);
+				if (!new_text || !new_orig)
+					break;
+				inputs[active].origin = new_orig;
+
 				inputs[active].capacity = new_len;
 			}
 
-			if (isdigit((unsigned char)c) || strchr("x+-*/^().sincosta", c))
+			if (c >= 32 && c <= 122)
 			{
-				// shift andd insert at caret
-				memmove(inp->text + inp->caret + 1, inp->text + inp->caret, len - inp->caret + 1);
-				inp->text[inp->caret] = (char)c;
+				// shift both text fields and insert at caret position
+				memmove(inp->origin + inp->caret + 1, inp->origin + inp->caret, len - inp->caret + 1);
+				inp->origin[inp->caret] = (char)c;
 				++(inp->caret);
 
-				bool periodic = strchr(inputs[active].text, 'n') || strchr(inputs[active].text, 'o');
+				bool periodic = strchr(inputs[active].origin, 'n') || strchr(inputs[active].origin, 'o');
 				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
@@ -667,13 +682,13 @@ int main(void)
 
 		if (IsKeyPressedRepeat(KEY_BACKSPACE) || IsKeyPressed(KEY_BACKSPACE))
 		{
-			size_t len = strlen(inputs[active].text);
+			size_t len = strlen(inputs[active].origin);
 			if (len > 0 && inputs[active].caret > 0)
 			{
-				memmove(inp->text + inp->caret - 1, inp->text + inp->caret, len - inp->caret + 1);
+				memmove(inp->origin + inp->caret - 1, inp->origin + inp->caret, len - inp->caret + 1);
 				--(inp->caret);
 
-				bool periodic = strchr(inputs[active].text, 'n') || strchr(inputs[active].text, 'o');
+				bool periodic = strchr(inputs[active].origin, 'n') || strchr(inputs[active].origin, 'o');
 				update_plot(&inputs[active], periodic);
 				changed = true;
 			}
@@ -690,7 +705,7 @@ int main(void)
 		}
 		if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))
 		{
-			if (inp->caret < strlen(inp->text))
+			if (inp->caret < strlen(inp->origin))
 			{
 				++(inp->caret);
 				changed = true;
@@ -715,9 +730,30 @@ int main(void)
 			}
 		}
 
-		// add new entry
-		if (active == total - 1 && IsKeyPressed(KEY_ENTER) && total < MAX_EQUATIONS - 1)
+		// adding new entry
+		if (IsKeyPressed(KEY_ENTER) && total < MAX_EQUATIONS)
 		{
+			// inputs[total] is first not yet used
+			char *free_text = inputs[total].text;
+			char *free_orig = inputs[total].origin;
+			size_t free_cap = inputs[total].capacity;
+
+			for (size_t i = total; i > active + 1; --i)
+				inputs[i] = inputs[i - 1];
+
+			// no shallow copy
+			inputs[active + 1].plot = (Plot){ 0 };
+			inputs[active + 1].text = free_text;
+			inputs[active + 1].origin = free_orig;
+			inputs[active + 1].capacity = free_cap;
+			inputs[active + 1].text[0] = '\0';
+			inputs[active + 1].origin[0] = '\0';
+			inputs[active + 1].caret = 0;
+			inputs[active + 1].scroll = 0.0f;
+			inputs[active + 1].valid = false;
+			inputs[active + 1].periodic = false;
+			inputs[active + 1].color = color_cycle[(next_color++) % 10];
+
 			++active;
 			++total;
 			changed = true;
@@ -765,7 +801,7 @@ int main(void)
 				{
 					if (!inputs[i].valid)
 						continue;
-					render_plot(inputs[i].plot, ssaaView, canvas_w, sH, color_cycle[i % 10], inputs[i].periodic);
+					render_plot(inputs[i].plot, ssaaView, canvas_w, sH, inputs[i].color, inputs[i].periodic);
 				}
 				rlPopMatrix();
 
