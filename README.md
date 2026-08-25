@@ -33,7 +33,7 @@ make run
 ```
 
 ### Controls
-- `Enter` on the lowest equation to add a new one 
+- `Enter` on equation to add a new one 
 - `Ctrl + R` to reset zoom and pan to defaults
 - `R` to reset pan
 - `Up`, `Down`, `Left`, `Right` for input menu navigation
