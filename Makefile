@@ -1,10 +1,11 @@
 CC = gcc
-CFLAGS = -O3 -march=native -mtune=native -std=c99 -Wall -Wextra -Wpedantic
-LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt
+CFLAGS = -O3 -march=native -mtune=native -std=c11 -Wall -Wextra -Wpedantic -I$(INCL_DIR)
+LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
-SRC_DIR = src
+SRC_DIR   = src
+INCL_DIR  = include
 BUILD_DIR = build
-BIN_DIR = bin
+BIN_DIR   = bin
 
 ifeq ($(XDG_SESSION_TYPE), wayland)
 	LDFLAGS += -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
@@ -14,8 +15,9 @@ ifeq ($(XDG_SESSION_TYPE), x11)
 	LDFLAGS += -lX11
 endif
 
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/tokenizer.c $(SRC_DIR)/evaluator.c
+SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+DEPS = $(OBJS:.o=.d)
 
 EXECUTABLE = bin/cf2x
 
@@ -27,7 +29,7 @@ $(EXECUTABLE): $(OBJS) | $(BIN_DIR)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(BUILD_DIR) $(BIN_DIR):
 	mkdir -p $@

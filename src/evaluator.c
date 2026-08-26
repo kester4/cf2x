@@ -1,5 +1,5 @@
-#include "evaluator.h"
-#include "tokenizer.h"
+#include "../include/evaluator.h"
+#include "../include/tokenizer.h"
 
 static  unsigned int precedence(char op)
 {

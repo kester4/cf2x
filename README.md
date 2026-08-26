@@ -7,7 +7,7 @@
 </div>
 
 ### Features
-- Supports single-variable equations with brackets, math operans and trigonometric functions: `sin`, `cos`, `tan`, `cot`
+- Supports single-variable equations with brackets, math operators and trigonometric functions: `sin`, `cos`, `tan`, `cot`
 - Is able to parse implicit multiplication and unary negation (shunting yard parser with RPN evaluator)
 - Uses recursive adaptive sampling to handle\* curvature plots
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels

@@ -1,4 +1,4 @@
-#include "tokenizer.h"
+#include "../include/tokenizer.h"
 
 
 static bool trimw_prevalidate(char *dst, char *src)
