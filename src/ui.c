@@ -240,7 +240,7 @@ bool handle_inputs_navigation(Input *inputs, size_t *active, size_t total)
 
 bool handle_inputs_adding(Input *inputs, size_t *next_color, size_t *active, size_t *total)
 {
-	if (!IsKeyPressed(KEY_ENTER) || *total >= MAX_EQUATIONS)
+	if (!(IsKeyPressed(KEY_ENTER) || IsKeyPressedRepeat(KEY_ENTER)) ||*total >= MAX_EQUATIONS)
 		return false;
 
 	// the idea is to shift everything to the end and
