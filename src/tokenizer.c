@@ -8,7 +8,10 @@ static bool trimw_prevalidate(char *dst, char *src)
 	// before getting rid of whitespaces and
 	// writting trimmed string to dst buffer
 	// 
-	// Note: "- x" is still allowed
+	// Note: "- x" is still allowed /// TODO
+	// "<letter> = ...", "<letter>(x) = ..." is allowed too
+	// well, except for "e = ..." and "x = ..."
+
 	bool is_letter;
 	bool was_letter = false;
 	bool was_space = false;
@@ -51,7 +54,7 @@ bool validate(char *dst, char *src)
 	if (length == 0 || length > MSTRLEN)
 		return false;
 	else if (length == 1)
-		return (isdigit(dst[0]) || dst[0] == 'x');
+		return (isdigit(dst[0]) || dst[0] == 'x' || dst[0] == 'e');
 
 	int bracket_depth = 0;
 	bool unclosed_sign = false;
@@ -64,23 +67,36 @@ bool validate(char *dst, char *src)
 		if (isalpha(curr))
 		{
 			unclosed_sign = false;
-			if (curr == 'x')
+			size_t left = length - i;
+
+			// exponent
+			if      (left >= 4 && strncmp(dst + i, "exp(", 4) == 0) { ++bracket_depth; i += 3; }
+
+			// argument or e constant
+			else if (curr == 'x' || curr == 'e')
 			{
 				if (isdigit(next) || next == '.')
 					return false;
 				continue;
 			}
-			
+
+			// logarithms
+			else if (left >= 4 && strncmp(dst + i, "log(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 3 && strncmp(dst + i, "ln(", 3) == 0)  { ++bracket_depth; i += 2; }
+
 			// trigonometry
-			size_t left = length - i;
-			if      (left >= 4 && strncmp(dst + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
+			else if (left >= 4 && strncmp(dst + i, "sin(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(dst + i, "cos(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(dst + i, "tan(", 4) == 0) { ++bracket_depth; i += 3; }
 			else if (left >= 4 && strncmp(dst + i, "cot(", 4) == 0) { ++bracket_depth; i += 3; }
+
+			// absolute value
+			else if (left >= 4 && strncmp(dst + i, "abs(", 4) == 0) { ++bracket_depth; i += 3; }
+				
 			else
 				return false;
 
-			// blang trig_func() parens are not allowed
+			// blank func() parens are not allowed
 			if (length - i >= 1 && dst[i + 1] == ')')
 				return false;
 		}
@@ -129,7 +145,7 @@ bool validate(char *dst, char *src)
 
 		else if (curr == '^')
 		{
-			if (i == 0)
+			if (i == 0 || dst[i - 1] == '(' || unclosed_sign)
 				return false;
 			if (!isalnum(next) && next != '.' && next != '(')
 				return false;
@@ -188,7 +204,7 @@ TokenData tokenize(char *str)
 		unsigned char curr = (unsigned char)str[i];
 		unsigned char next = (unsigned char)str[i + 1];
 
-		// "-x/-func" at the very begining or after "("
+		// "-x/-func/-e" at the very begining or after "("
 		bool unary_minus = (curr == '-') && (i == 0 || str[i - 1] == '(');
 		if (unary_minus && !isdigit(next) && next != '.')
 		{
@@ -197,8 +213,16 @@ TokenData tokenize(char *str)
 			continue;
 		}
 		
-		// trigonometric function
-		else if (curr == 's' || curr == 'c' || curr == 't')
+		// natural logarithm
+		else if (curr == 'l' && next == 'n')
+		{
+			strcpy(tokens[ti++], "ln");
+			++i;
+		}
+
+		// trigonometric function, logarithm, abs or exp()
+		else if (curr == 's' || curr == 'c' || curr == 't' || curr == 'a'
+			|| curr == 'l' || (curr == 'e' && next == 'x' && str[i + 2] == 'p'))
 		{
 			tokens[ti][0] = curr;
 			tokens[ti][1] = next;
@@ -214,7 +238,7 @@ TokenData tokenize(char *str)
 			&& (isalpha(next) || next == '(')
 			&& i < strl - 1)
 		{
-			chr_cpy(tokens, ti++, curr);
+			chr_cpy(tokens, ti++, (curr != 'e' ? curr : 'E'));
 			chr_cpy(tokens, ti++, '*');
 		}
 		// ... ")(" -> ") * ("
@@ -224,18 +248,18 @@ TokenData tokenize(char *str)
 			chr_cpy(tokens, ti++, '*');
 		}
 
-		// single operand, brackets or regular arg letter
+		// single operand, brackets, x arg or e-constant
 		// (also not a part of -<...> at the beginning)
-		else if (curr == 'x' || curr == '(' || curr == ')'
+		else if (curr == 'x' || curr == 'e' || curr == '(' || curr == ')'
 			|| (i != 0 && is_operand(curr) && !unary_minus))
-			chr_cpy(tokens, ti++, curr);
+			chr_cpy(tokens, ti++, (curr != 'e' ? curr : 'E'));
 
 		// integer or fraction
 		else if (isdigit(curr) || curr == '.')
 		{
 			size_t bi = 0;
 
-			// unary minus pre dogit, like "(-1)"
+			// unary minus pre digit, like "(-1)"
 			if (i > 0 && str[i - 1] == '-'
 				&& (i == 1 || str[i - 2] == '('))
 				tokens[ti][bi++] = '-';
@@ -247,7 +271,7 @@ TokenData tokenize(char *str)
 
 			--i;
 
-			// add "*" after digit/bracket if there will be <NUM>X/<NUM>(
+			// add "*" after digit/bracket if there will be <NUM>X / <NUM>(
 			if (i < strl && (isalpha(str[i + 1]) || str[i + 1] == '('))
 				strcpy(tokens[ti++], "*");
 		}

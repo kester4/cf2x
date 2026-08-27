@@ -7,7 +7,7 @@
 </div>
 
 ### Features
-- Supports single-variable equations with brackets, math operators and trigonometric functions: `sin`, `cos`, `tan`, `cot`
+- Supports single-variable equations with brackets, math operators, some trigonometric functions, logaritms and abs()
 - Is able to parse implicit multiplication and unary negation (shunting yard parser with RPN evaluator)
 - Uses recursive adaptive sampling to handle\* curvature plots
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels
@@ -15,7 +15,7 @@
 - Render caching doesn't redraw canvas on every frame
 
 ### Current issues
-- \*Discontinuities such as `1/x + C`, where `C != 0` or `2.71^x`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
+- \*Discontinuities such as `1/x + C`, where `C != 0` or `exp(x)`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
 - No input panel vertical scrolling, so inputs can go past screen if there are too many
 - Memory leakes and crashes are possible, some equations may produce unexpected results
 
@@ -42,6 +42,6 @@ make run
 - [ ] Add ~~horizontal~~/vertical scrolling to the input menu  
 - [ ] Make `refine_plot()` detect things like `1/x + C`  
 - [x] Implement inserting new equations between already existing ones in the input menu
-- [ ] Add `log`/`ln` and `exp` letter support  
+- [x] Add `log`/`ln` and `exp` letter support  
 - [ ] Offload plots rendering to the GPU  
 - [ ] Add a dark theme

@@ -5,6 +5,9 @@ static  unsigned int precedence(char op)
 {
 	switch (op)
 	{
+	case 'a': return 4;
+	case 'e': return 4;
+	case 'l': return 4;
 	case 's': return 4;
 	case 'c': return 4;
 	case 't': return 4;
@@ -45,16 +48,16 @@ TokenData shunting_yard(TokenData _tokens)
 		unsigned char t = (unsigned char)tokens[i][0];
 
 		// token is a number or an argument
-		if (t == 'x' || isdigit(t)
+		if (t == 'x' || t == 'E' || isdigit(t)
 			|| (t == '-' && isdigit((unsigned char)tokens[i][1]))
 			|| t == '.')
 		{
 			output[oi++] = tokens[i];
 			continue;
 		}
-		
-		// token is trigonometry func or a (
-		else if (t == '(' || strchr("sct", t))
+
+		// token is trigonometry func, exp(), log()/ln(), abs() or a (
+		else if (t == '(' || strchr("sctela", t))
 		{
 			stack[si++] = tokens[i];
 			continue;
@@ -67,8 +70,8 @@ TokenData shunting_yard(TokenData _tokens)
 				output[oi++] = stack[--si];
 			--si; // discard '('
 
-			// add trigonometry to ouput too if any
-			if (si && strchr("sct", stack[si][0]))
+			// add funcs to ouput too if any
+			if (si && strchr("sctela", stack[si][0]))
 				output[oi++] = stack[--si];
 			continue;
 		}
@@ -119,6 +122,9 @@ Instr *prebake(TokenData _pftokens)
 		if (t == 'x')
 			program[pi] = (Instr){ .type = OP_VAR, .value = (double)(int)t};
 
+		else if (t == 'E')
+			program[pi] = (Instr){ .type = OP_NUM, .value = M_E };
+
 		// digit (incl. fractions)
 		else if ((t == '-' && isdigit((unsigned char)tokens[i][1]))
 			|| t == '.'
@@ -144,6 +150,18 @@ Instr *prebake(TokenData _pftokens)
 			program[pi] = (Instr){ .type = OP_TAN };
 		else if (strcmp(tokens[i], "cot") == 0)
 			program[pi] = (Instr){ .type = OP_COT };
+
+		// exponent / logarithms
+		else if (strcmp(tokens[i], "exp") == 0)
+			program[pi] = (Instr){ .type = OP_EXP };
+		else if (strcmp(tokens[i], "log") == 0)
+			program[pi] = (Instr){ .type = OP_LOG };
+		else if (strcmp(tokens[i], "ln") == 0)
+			program[pi] = (Instr){ .type = OP_LN };
+
+		// absolute value
+		else if (strcmp(tokens[i], "abs") == 0)
+			program[pi] = (Instr){ .type = OP_ABS };
 
 		// operands
 		else if (t == '^') program[pi] = (Instr){ .type = OP_POW };
@@ -190,6 +208,22 @@ double evaluate(Instr *program, ValueStack *stack, double arg)
 
 		case OP_COT:
 			s[sp - 1] = 1 / tan(s[sp - 1]);
+			break;
+
+		case OP_ABS:
+			s[sp - 1] = fabs(s[sp - 1]);
+			break;
+
+		case OP_LOG:
+			s[sp - 1] = log2(s[sp - 1]);
+			break;
+
+		case OP_LN:
+			s[sp - 1] = log(s[sp - 1]);
+			break;
+
+		case OP_EXP:
+			s[sp - 1] = exp(s[sp - 1]);
 			break;
 
 		case OP_POW: {

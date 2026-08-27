@@ -6,6 +6,11 @@
 	#endif
 #endif
 
+#ifndef M_E
+	#undef M_E
+	#define M_E 2.71828182845904523536
+#endif
+
 #include "tokenizer.h"
 #include <math.h>
 #include <float.h>
@@ -23,7 +28,11 @@ typedef enum
 	OP_SIN,
 	OP_COS,
 	OP_TAN,
-	OP_COT
+	OP_COT,
+	OP_ABS,
+	OP_EXP,
+	OP_LOG,
+	OP_LN
 } OpType;
 
 
