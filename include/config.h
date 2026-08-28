@@ -28,16 +28,6 @@
 #define    ZOOM_FACTOR (1.1)
 #define  PERIODIC_FUNC (8.0f)     // see render_plot()
 
-// static color pallete
-#define     BGND_COLOR ((Color){ 245, 245, 245, 255 })
-#define   MJGRID_COLOR ((Color){ 180, 180, 180, 255 })
-#define   MNGRID_COLOR ((Color){ 200, 200, 200, 255 })
-#define     AXIS_COLOR ((Color){ 80, 80, 80, 255 })
-#define     TEXT_COLOR ((Color){ 30, 30, 30, 255 })
-#define INPUTBOX_COLOR ((Color){ 250, 250, 250, 255 })
-#define  INPUTUP_COLOR ((Color){ 215, 215, 215, 255})
-#define    ERASE_COLOR (INPUTBOX_COLOR)
-
 // labels formatting
 #define   MAX_SHORTVAL (1e5)
 #define      FONT_SIZE (20.0f)
@@ -48,3 +38,22 @@
 
 #define CLAMP(val, min, max) \
 	((val) < (min) ? (min) : (val) > (max) ? (max) : (val))
+
+// color pallete
+#define     BGND_LIGHT ((Color){ 245, 245, 245, 255 })
+#define   MJGRID_LIGHT ((Color){ 180, 180, 180, 255 })
+#define   MNGRID_LIGHT ((Color){ 200, 200, 200, 255 })
+#define     AXIS_LIGHT ((Color){ 80, 80, 80, 255 })
+#define     TEXT_LIGHT ((Color){ 30, 30, 30, 255 })
+#define INPUTBOX_LIGHT ((Color){ 250, 250, 250, 255 })
+#define  INPUTUP_LIGHT ((Color){ 215, 215, 215, 255})
+#define    ERASE_LIGHT (INPUTBOX_LIGHT)
+
+#define      BGND_DARK ((Color){ 40, 40, 40, 255 })
+#define    MJGRID_DARK ((Color){ 82, 82, 82, 255 })
+#define    MNGRID_DARK ((Color){ 69, 69, 69, 255 })
+#define      AXIS_DARK ((Color){ 184, 184, 184, 255 })
+#define      TEXT_DARK ((Color){ 245, 245, 245, 255 })
+#define  INPUTBOX_DARK ((Color){ 43, 43, 43, 255 })
+#define   INPUTUP_DARK ((Color){ 65, 65, 65, 255 })
+#define     ERASE_DARK (INPUTBOX_DARK)

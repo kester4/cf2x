@@ -7,19 +7,19 @@ static const Color color_cycle[] = {
 	{  44, 160,  44, 255 }, // green
 	{ 148, 103, 189, 255 }, // purple
 	{ 255, 200, 0, 255 },   // yellow
-	{   0,   0,   0, 255 }, // black
 	{ 227, 119, 194, 255 }, // pink
-	{ 127, 127, 127, 255 }, // gray
+	{ 128, 128, 128, 255 }, // gray
 	{  23, 190, 207, 255 }, // cyan
 	{ 140,  93,  62, 255 }  // brown
 };
 
-static Rectangle erase_button(int w, int h, int s)
+static Rectangle button(int w, int h, int s, bool erase)
 {
 	float box_w = (float)(w / INPUTBOX_REL) * s;
 	float bar_h = INPUT_HEAD_REL * (float)h * s;
 
-	return (Rectangle) { box_w * 0.69f, bar_h * 0.25f, box_w * 0.26f, bar_h * 0.5f };
+	return (Rectangle) { box_w * (erase ? 0.69f : 0.045f),
+		bar_h * 0.25f, box_w * (erase ? 0.26f : 0.18f), bar_h * 0.5f };
 }
 
 static Rectangle input_box(int w, int h, int s, size_t i)
@@ -27,40 +27,58 @@ static Rectangle input_box(int w, int h, int s, size_t i)
 	float box_w = (float)(w / INPUTBOX_REL) * s;
 	float box_h = (float)h * INPUT_H_REL * s;
 
-	// {out.width * 0.15f, out.y + box_h * 0.25f, out.width * 0.8, out.height * 0.5f};
 	return (Rectangle) { 0, INPUT_HEAD_REL *s *h + i * box_h, box_w, box_h };
 }
 
-void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active)
+static Vector2 draw_butons(Rectangle erase, Rectangle theme, Font f, float *fs, bool light)
 {
-	float   font_size;
-	Vector2 text_size;
+	const char *ttext = light ? "Light" : "Dark";
+	const char *clear = "Clear all";
+	Vector2 text_size = MeasureTextEx(f, ttext, *fs, 0.0f);
 
+	DrawRectangleRounded(theme, 0.90f, 0, (light ? ERASE_LIGHT : ERASE_DARK));
+	DrawRectangleRounded(erase, 0.90f, 0, (light ? ERASE_LIGHT : ERASE_DARK));
+
+	// theme name
+	DrawTextEx(f, ttext, (Vector2)
+		{ theme.x + (theme.width - text_size.x) * 0.5f,
+		  theme.y + (theme.height - text_size.y) * 0.5f
+		}, *fs, 0.0f, light ? TEXT_LIGHT : TEXT_DARK);
+
+	// clear all
+	text_size = MeasureTextEx(f, clear, *fs, 0.0f);
+	DrawTextEx(f, clear, (Vector2)
+		{ erase.x + (erase.width - text_size.x) * 0.5f,
+		  erase.y + (erase.height - text_size.y) * 0.5f
+		}, *fs, 0.0f, light ? TEXT_LIGHT : TEXT_DARK);
+
+	*fs *= 1.3f;
+	return text_size;
+}
+
+
+void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active, bool light)
+{
 	Rectangle main_box = (Rectangle){ 0, 0, (int)w / INPUTBOX_REL * SSAA, SSAA * h };
 	Rectangle    upper = (Rectangle){ 0, 0, (int)w / INPUTBOX_REL * SSAA, INPUT_HEAD_REL * SSAA * h };
-	Rectangle    erase = erase_button(w, h, SSAA);
+	DrawRectangleRec(main_box, (light ? INPUTBOX_LIGHT : INPUTBOX_DARK));
+	DrawRectangleRec(upper,    (light ? INPUTUP_LIGHT : INPUTUP_DARK));
 
-	DrawRectangleRec(main_box, INPUTBOX_COLOR);
-	DrawRectangleRec(upper, INPUTUP_COLOR);
-	DrawRectangleRounded(erase, 0.90f, 0, ERASE_COLOR);
+	Rectangle    erase = button(w, h, SSAA, true);
+	Rectangle switcher = button(w, h, SSAA, false);
+	float    font_size = upper.height * 0.35f;
+	Vector2  text_size = \
+		draw_butons(erase, switcher, f, &font_size, light);
 
-	// clear all is always centered in erase box
-	font_size = upper.height * 0.35f;
-	text_size = MeasureTextEx(f, "Clear all", font_size, 0.0f);
-	DrawTextEx(f, "Clear all", (Vector2)
-	{
-		erase.x + (erase.width - text_size.x) * 0.5f,
-			erase.y + (erase.height - text_size.y) * 0.5f
-	},
-		font_size, 0.0f, TEXT_COLOR);
+	Color  act = light ? DARKGRAY : LIGHTGRAY;
+	Color norm = light ? LIGHTGRAY : DARKGRAY;
 
-	font_size *= 1.3f;
 	// blinking caret every half of a second
 	bool caret = ((int)(GetTime() / 0.5) % 2 == 0);
 	for (size_t i = 0; i < size; ++i)
 	{
 		Rectangle ci = input_box(w, h, SSAA, i);
-		DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? DARKGRAY : LIGHTGRAY);
+		DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? act : norm);
 
 		if (inputs[i].valid)
 			DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, inputs[i].color);
@@ -105,7 +123,7 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 			(Vector2) {
 			font_pos.x - inputs[i].scroll, font_pos.y
 		},
-			font_size, 0.0f, TEXT_COLOR);
+			font_size, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
 
 		// draw caret if input box is focused
 		if (i == active && caret)
@@ -115,19 +133,27 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 				caret_y += (ci.height - MeasureTextEx(f, "|", font_size, 0.0f).y) * 0.5f - ci.height * 0.5f;
 
 			Vector2 caret_pos = (Vector2){ font_pos.x - inputs[i].scroll + caret_x - 3.0f * SSAA, caret_y };
-			DrawTextEx(f, "|", caret_pos, font_size, 0.0f, TEXT_COLOR);
+			DrawTextEx(f, "|", caret_pos, font_size, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
 		}
 		EndScissorMode();
 	}
 }
 
 bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h,
-	size_t *total, size_t *active, size_t *next_color, bool on_input)
+	size_t *total, size_t *active, size_t *next_color, bool *light, bool on_input)
 {
 	if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
 		return false;
 
-	if (CheckCollisionPointRec(mouse, erase_button(w, h, 1.0f)))
+	// theme switch clicked
+	if (CheckCollisionPointRec(mouse, button(w, h, 1.0f, false)))
+	{
+		*light = !(*light);
+		return true;
+	}
+
+	// erase botton clicked
+	if (CheckCollisionPointRec(mouse, button(w, h, 1.0f, true)))
 	{
 		free_plots(total, inputs);
 		*active = 0;
@@ -136,6 +162,7 @@ bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h,
 		return true;
 	}
 
+	// clicked on equations
 	if (!on_input)
 		return false;
 
@@ -264,7 +291,7 @@ bool handle_inputs_adding(Input *inputs, size_t *next_color, size_t *active, siz
 	inputs[*active + 1].scroll = 0.0f;
 	inputs[*active + 1].valid = false;
 	inputs[*active + 1].periodic = false;
-	inputs[*active + 1].color = color_cycle[(*next_color) % 10];
+	inputs[*active + 1].color = color_cycle[(*next_color) % 9];
 
 	++(*next_color);
 	++(*active);

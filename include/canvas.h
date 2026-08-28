@@ -33,7 +33,7 @@ typedef struct
 	double *values;
 } Plot;
 
-void render_grid(View v, Font f, int w, int h);
+void render_grid(View v, Font f, int w, int h, bool light);
 
 void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic);
 void update_plot(Input *input, bool is_periodic);

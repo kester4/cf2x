@@ -81,7 +81,7 @@ bool resize_plot_cache(RenderTexture2D *plots_cache, int w, int h)
 }
 
 void rerender_plots(Input *inputs, RenderTexture2D plots_cache,
-	View view, Font font, size_t total, int w, int h)
+	View view, Font font, size_t total, int w, int h, bool light)
 {
 	View ssaaView = view;
 	ssaaView.scale = view.scale * SSAA;
@@ -91,11 +91,11 @@ void rerender_plots(Input *inputs, RenderTexture2D plots_cache,
 	int sH = h * SSAA;
 
 	BeginTextureMode(plots_cache);
-	ClearBackground(BGND_COLOR);
+	ClearBackground(light ? BGND_LIGHT : BGND_DARK);
 
 	rlPushMatrix();
 	rlTranslatef((float)input_w, 0.0f, 0.0f);
-	render_grid(ssaaView, font, canvas_w, sH);
+	render_grid(ssaaView, font, canvas_w, sH, light);
 	for (size_t i = 0; i < total; ++i)
 	{
 		if (!inputs[i].valid)
@@ -108,10 +108,10 @@ void rerender_plots(Input *inputs, RenderTexture2D plots_cache,
 }
 
 void render_frame(Input *inputs, RenderTexture2D plots_cache,
-	int w, int h, Font font, size_t active, size_t total)
+	int w, int h, bool light, Font font, size_t active, size_t total)
 {
 	BeginTextureMode(plots_cache);
-	render_menu(w, h, font, inputs, total, active);
+	render_menu(w, h, font, inputs, total, active, light);
 	EndTextureMode();
 
 	BeginDrawing();

@@ -69,7 +69,7 @@ static char *format(double scale, double number, double step)
 	return axis_label;
 }
 
-void render_grid(View v, Font f, int w, int h)
+void render_grid(View v, Font f, int w, int h, bool light)
 {
 	double spacing = GRID_SPACING * SSAA / v.scale;
 	double   order = floor(log10(spacing));
@@ -95,10 +95,12 @@ void render_grid(View v, Font f, int w, int h)
 
 		// minor
 		for (float xj = current.x + scmin_step; xj < next.x; xj += scmin_step)
-			DrawLineEx((Vector2) { xj, 0 }, (Vector2) { xj, h }, MINORL_THICK *SSAA, MNGRID_COLOR);
+			DrawLineEx((Vector2) { xj, 0 }, (Vector2) { xj, h }, MINORL_THICK * SSAA,
+				(light ? MNGRID_LIGHT : MNGRID_DARK));
 
 		// major (drawn over minor)
-		DrawLineEx((Vector2) { current.x, 0 }, (Vector2) { current.x, h }, MAJORL_THICK *SSAA, MJGRID_COLOR);
+		DrawLineEx((Vector2) { current.x, 0 }, (Vector2) { current.x, h }, MAJORL_THICK * SSAA,
+			(light ? MJGRID_LIGHT : MJGRID_DARK));
 
 		// don't print zero at (0; 0)
 		if (fabs(xi) > 1e-12)
@@ -106,7 +108,7 @@ void render_grid(View v, Font f, int w, int h)
 				(Vector2) {
 			current.x - 4.0f * SSAA, center.y + 2.0f * SSAA
 		},
-				FONT_SIZE *SSAA, 0.0f, TEXT_COLOR);
+				FONT_SIZE * SSAA, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
 		current = next;
 	}
 
@@ -119,22 +121,26 @@ void render_grid(View v, Font f, int w, int h)
 		next = screen_from_world(v, 0, yi + major, w, h);
 
 		for (float yj = current.y + scmin_step; yj > next.y; yj -= scmin_step)
-			DrawLineEx((Vector2) { 0, yj }, (Vector2) { w, yj }, MINORL_THICK *SSAA, MNGRID_COLOR);
+			DrawLineEx((Vector2) { 0, yj }, (Vector2) { w, yj }, MINORL_THICK * SSAA,
+				(light ? MNGRID_LIGHT : MNGRID_DARK));
 
-		DrawLineEx((Vector2) { 0, current.y }, (Vector2) { w, current.y }, MAJORL_THICK *SSAA, MJGRID_COLOR);
+		DrawLineEx((Vector2) { 0, current.y }, (Vector2) { w, current.y }, MAJORL_THICK * SSAA,
+			(light ? MJGRID_LIGHT : MJGRID_DARK));
 
 		if (fabs(yi) > 1e-12)
 			DrawTextEx(f, format(v.scale, yi, major),
 				(Vector2) {
 			center.x + 4.0f * SSAA, current.y - 8.0f * SSAA
 		},
-				FONT_SIZE *SSAA, 0.0f, TEXT_COLOR);
+				FONT_SIZE * SSAA, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
 		current = next;
 	}
 
 	// main axes
-	DrawLineEx((Vector2) { 0, center.y }, (Vector2) { w, center.y }, AXIS_THICK *SSAA, AXIS_COLOR);
-	DrawLineEx((Vector2) { center.x, 0 }, (Vector2) { center.x, h }, AXIS_THICK *SSAA, AXIS_COLOR);
+	DrawLineEx((Vector2) { 0, center.y }, (Vector2) { w, center.y },
+		AXIS_THICK * SSAA, (light ? AXIS_LIGHT : AXIS_DARK));
+	DrawLineEx((Vector2) { center.x, 0 }, (Vector2) { center.x, h },
+		AXIS_THICK * SSAA, (light ? AXIS_LIGHT : AXIS_DARK));
 }
 
 static Sample sample(Instr *prog, ValueStack *vstack, View v, int w, int h, double x)
@@ -173,7 +179,7 @@ static void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, S
 	if (depth >= MAX_RECDEPTH)
 	{
 		if (on_screen(prev, curr, h))
-			DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK *SSAA, color);
+			DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK * SSAA, color);
 		return;
 	}
 
@@ -186,7 +192,7 @@ static void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, S
 
 	if (on_screen(prev, curr, h) && !split)
 	{
-		DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK *SSAA, color);
+		DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK * SSAA, color);
 		return;
 	}
 

@@ -21,8 +21,8 @@ void free_plots(size_t *size, Input *inputs);
 bool resize_plot_cache(RenderTexture2D *plots_cache, int w, int h);
 
 void rerender_plots(Input *inputs, RenderTexture2D plots_cache,
-	View view, Font font, size_t total, int w, int h);
+	View view, Font font, size_t total, int w, int h, bool light);
 void render_frame(Input *inputs, RenderTexture2D plots_cache,
-	int w, int h, Font font, size_t active, size_t total);
+	int w, int h, bool light, Font font, size_t active, size_t total);
 
 void free_exit(size_t *total, Input *inputs, RenderTexture2D *plots_cache, Font *font);

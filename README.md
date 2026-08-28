@@ -11,7 +11,7 @@
 - Is able to parse implicit multiplication and unary negation (shunting yard parser with RPN evaluator)
 - Uses recursive adaptive sampling to handle\* curvature plots
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels
-- Supports window resizing and SSAA for smoother lines
+- Supports theme switching and SSAA for smoother lines
 - Render caching doesn't redraw canvas on every frame
 
 ### Current issues
@@ -44,4 +44,4 @@ make run
 - [x] Implement inserting new equations between already existing ones in the input menu
 - [x] Add `log`/`ln` and `exp` letter support  
 - [ ] Offload plots rendering to the GPU  
-- [ ] Add a dark theme
+- [x] Add a dark theme

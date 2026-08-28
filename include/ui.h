@@ -23,10 +23,12 @@ typedef struct Input
 	Color  color;
 } Input;
 
-void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active);
+void render_menu(int w, int h, Font f, Input *inputs, size_t size,
+	size_t active, bool light);
 
 bool handle_input_typing(Input *inputs, size_t active);
 bool handle_input_delete(Input *inputs, size_t active);
 bool handle_inputs_navigation(Input *inputs, size_t *active, size_t total);
 bool handle_inputs_adding(Input *inputs, size_t *next_color, size_t *active, size_t *total);
-bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h, size_t *total, size_t *active, size_t *next_color, bool on_input);
+bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h, size_t *total, size_t *active,
+	size_t *next_color, bool* light, bool on_input);
