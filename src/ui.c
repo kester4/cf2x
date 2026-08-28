@@ -56,6 +56,57 @@ static Vector2 draw_butons(Rectangle erase, Rectangle theme, Font f, float *fs, 
 	return text_size;
 }
 
+static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size, bool active, bool caret, bool light)
+{
+	// circle indicator will stay between text and x_screen=0
+	Vector2 text_size = MeasureTextEx(f, input->origin, font_size, 0.0f);
+	Vector2 font_pos = (Vector2){ ci.width * 0.14f, ci.y + (ci.height - text_size.y) * 0.5f };
+
+	// determine caret pos (LibreSans isn't proposal)
+	char until = input->origin[input->caret];
+	input->origin[input->caret] = '\0';
+	float caret_x = MeasureTextEx(f, input->origin, font_size, 0.0f).x;
+	input->origin[input->caret] = until;
+
+	// draw text inside [font_pos.x, render_canvas_beginning]
+	float visible_w = ci.width - font_pos.x - INPUTB_PADDING * SSAA;
+	if (visible_w <= 0.0f)
+		visible_w = 0.0f;
+
+	if (text_size.x <= visible_w) // doesn't go past input width
+		input->scroll = 0.0f;
+	else                          // clamping
+	{
+		if (caret_x - input->scroll > visible_w)
+			input->scroll = caret_x - visible_w;
+		if (caret_x - input->scroll < 0.0f)
+			input->scroll = caret_x;
+		if (input->scroll > text_size.x - visible_w)
+			input->scroll = text_size.x - visible_w;
+		if (input->scroll < 0.0f)
+			input->scroll = 0.0f;
+	}
+
+	BeginScissorMode((int)font_pos.x - SSAA, (int)ci.y,
+		(int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)ci.height);
+
+		DrawTextEx(f, input->origin,
+			(Vector2) { font_pos.x - input->scroll, font_pos.y },
+			font_size, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
+
+		// draw caret if input box is focused
+		if (active && caret)
+		{
+			float caret_y = font_pos.y - SSAA;
+			if (text_size.x == 0.0f)
+				caret_y += (ci.height - MeasureTextEx(f, "|", font_size, 0.0f).y) * 0.5f - ci.height * 0.5f;
+
+			Vector2 caret_pos = (Vector2){ font_pos.x - input->scroll + caret_x - 3.0f * SSAA, caret_y };
+			DrawTextEx(f, "|", caret_pos, font_size, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
+		}
+
+	EndScissorMode();
+}
 
 void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active, bool light)
 {
@@ -64,11 +115,10 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 	DrawRectangleRec(main_box, (light ? INPUTBOX_LIGHT : INPUTBOX_DARK));
 	DrawRectangleRec(upper,    (light ? INPUTUP_LIGHT : INPUTUP_DARK));
 
+	float    font_size = upper.height * 0.35f;
 	Rectangle    erase = button(w, h, SSAA, true);
 	Rectangle switcher = button(w, h, SSAA, false);
-	float    font_size = upper.height * 0.35f;
-	Vector2  text_size = \
-		draw_butons(erase, switcher, f, &font_size, light);
+	draw_butons(erase, switcher, f, &font_size, light);
 
 	Color  act = light ? DARKGRAY : LIGHTGRAY;
 	Color norm = light ? LIGHTGRAY : DARKGRAY;
@@ -77,9 +127,11 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 	bool caret = ((int)(GetTime() / 0.5) % 2 == 0);
 	for (size_t i = 0; i < size; ++i)
 	{
+		// text input box
 		Rectangle ci = input_box(w, h, SSAA, i);
 		DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? act : norm);
 
+		// validity indicator
 		if (inputs[i].valid)
 			DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, inputs[i].color);
 		else
@@ -89,53 +141,7 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 			DrawCircle(warning.x + warning.width * 0.52f, warning.y + warning.height * 1.45f, warning.width * 0.6f, ORANGE);
 		}
 
-		// circle indicator will be between text and x_screen=0
-		text_size = MeasureTextEx(f, inputs[i].origin, font_size, 0.0f);
-		Vector2 font_pos = (Vector2){ ci.width * 0.14f, ci.y + (ci.height - text_size.y) * 0.5f };
-
-		// turns out lib sans is proposional, so we can't char width * caret
-		char until = inputs[i].origin[inputs[i].caret];
-		inputs[i].origin[inputs[i].caret] = '\0';
-		float caret_x = MeasureTextEx(f, inputs[i].origin, font_size, 0.0f).x;
-		inputs[i].origin[inputs[i].caret] = until;
-
-		// [font_pos.x, render_canvas_beginning]
-		float visible_w = ci.width - font_pos.x - INPUTB_PADDING * SSAA;;
-		if (visible_w <= 0.0f)
-			visible_w = 0.0f;
-
-		if (text_size.x <= visible_w) // doesn't go past input width
-			inputs[i].scroll = 0.0f;
-		else
-		{
-			if (caret_x - inputs[i].scroll > visible_w)
-				inputs[i].scroll = caret_x - visible_w;
-			if (caret_x - inputs[i].scroll < 0.0f)
-				inputs[i].scroll = caret_x;
-			if (inputs[i].scroll > text_size.x - visible_w)
-				inputs[i].scroll = text_size.x - visible_w;
-			if (inputs[i].scroll < 0.0f)
-				inputs[i].scroll = 0.0f;
-		}
-
-		BeginScissorMode((int)font_pos.x - SSAA, (int)ci.y, (int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)ci.height);
-		DrawTextEx(f, inputs[i].origin,
-			(Vector2) {
-			font_pos.x - inputs[i].scroll, font_pos.y
-		},
-			font_size, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
-
-		// draw caret if input box is focused
-		if (i == active && caret)
-		{
-			float caret_y = font_pos.y - SSAA;
-			if (text_size.x == 0.0f)
-				caret_y += (ci.height - MeasureTextEx(f, "|", font_size, 0.0f).y) * 0.5f - ci.height * 0.5f;
-
-			Vector2 caret_pos = (Vector2){ font_pos.x - inputs[i].scroll + caret_x - 3.0f * SSAA, caret_y };
-			DrawTextEx(f, "|", caret_pos, font_size, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
-		}
-		EndScissorMode();
+		draw_input_text(ci, f, &inputs[i], font_size, i == active, caret, light);
 	}
 }
 
