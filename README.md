@@ -16,7 +16,6 @@
 
 ### Current issues
 - \*Discontinuities such as `1/x + C`, where `C != 0` or `exp(x)`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
-- No input panel vertical scrolling, so inputs can go past screen if there are too many
 - Memory leakes and crashes are possible, some equations may produce unexpected results
 
 ### Installation
@@ -39,7 +38,7 @@ make run
 - `Up`, `Down`, `Left`, `Right` for input menu navigation
 
 ### TODO
-- [ ] Add ~~horizontal~~/vertical scrolling to the input menu  
+- [x] Add horizontal/vertical scrolling to the input menu  
 - [ ] Make `refine_plot()` detect things like `1/x + C`  
 - [x] Implement inserting new equations between already existing ones in the input menu
 - [x] Add `log`/`ln` and `exp` letter support  

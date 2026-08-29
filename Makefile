@@ -19,7 +19,7 @@ SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 DEPS = $(OBJS:.o=.d)
 
-EXECUTABLE = bin/cf2x
+EXECUTABLE = $(BIN_DIR)/cf2x
 
 .PHONY: all clean rebuild run
 

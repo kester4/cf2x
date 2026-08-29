@@ -16,6 +16,7 @@
 // sizes
 #define   INPUTB_THICK (2) 
 #define INPUTB_PADDING (15.0f)
+#define    SCROLLBAR_W (2.0f * INPUTB_THICK * SSAA)
 
 // plotting canvas parameters
 #define   GRID_SPACING (140)

@@ -1,6 +1,8 @@
 #include "../include/ui.h"
 #include "../include/app.h"
 
+static float vscroll = 0.0f;
+
 static const Color color_cycle[] = {
 	{  45, 117, 180, 255 }, // blue
 	{ 214,  39,  40, 255 }, // red
@@ -27,7 +29,9 @@ static Rectangle input_box(int w, int h, int s, size_t i)
 	float box_w = (float)(w / INPUTBOX_REL) * s;
 	float box_h = (float)h * INPUT_H_REL * s;
 
-	return (Rectangle) { 0, INPUT_HEAD_REL *s *h + i * box_h, box_w, box_h };
+	return (Rectangle)
+		{ 0, INPUT_HEAD_REL * s * h + i * box_h - vscroll * s,
+		  box_w, box_h };
 }
 
 static Vector2 draw_butons(Rectangle erase, Rectangle theme, Font f, float *fs, bool light)
@@ -56,7 +60,31 @@ static Vector2 draw_butons(Rectangle erase, Rectangle theme, Font f, float *fs, 
 	return text_size;
 }
 
-static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size, bool active, bool caret, bool light)
+static void draw_scrollbar(Rectangle clip, size_t total, int h)
+{
+	float     box_h = (float)h * INPUT_H_REL * SSAA;
+	float content_h = (float)total * box_h;
+	
+	if (content_h <= clip.height)
+		return; // everything fits
+
+	float scrollbar_h = clip.height * (clip.height / content_h);
+	scrollbar_h = CLAMP(scrollbar_h, 10.0f * SSAA, clip.height);
+
+	float max_scroll = content_h - clip.height;
+	float   progress = (vscroll * SSAA) / max_scroll;
+	progress = CLAMP(progress, 0.0f, 1.0f);
+
+	Rectangle scrollbar = (Rectangle){
+		clip.x + clip.width - SCROLLBAR_W - 4.0f * SSAA,
+		clip.y + progress * (clip.height - scrollbar_h) + 4.0f * SSAA,
+		SCROLLBAR_W, scrollbar_h - 4.0f * SSAA
+	};
+	DrawRectangleRounded(scrollbar, 1.0f, 0, GRAY);
+}
+
+static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size,
+	bool active, bool caret, bool light, Rectangle sclip)
 {
 	// circle indicator will stay between text and x_screen=0
 	Vector2 text_size = MeasureTextEx(f, input->origin, font_size, 0.0f);
@@ -87,8 +115,16 @@ static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size,
 			input->scroll = 0.0f;
 	}
 
-	BeginScissorMode((int)font_pos.x - SSAA, (int)ci.y,
-		(int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)ci.height);
+	float clip_top = ci.y > sclip.y ? ci.y : sclip.y;
+	float clip_bot = (ci.y + ci.height < sclip.y + sclip.height) \
+		? ci.y + ci.height \
+		: sclip.y + sclip.height;
+	float   clip_h = clip_bot - clip_top;
+	if (clip_h < 0.0f)
+		clip_h = 0.0f;
+
+	BeginScissorMode((int)font_pos.x - SSAA, (int)clip_top,
+		(int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)clip_h);
 
 		DrawTextEx(f, input->origin,
 			(Vector2) { font_pos.x - input->scroll, font_pos.y },
@@ -123,26 +159,35 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 	Color  act = light ? DARKGRAY : LIGHTGRAY;
 	Color norm = light ? LIGHTGRAY : DARKGRAY;
 
+	Rectangle clip = (Rectangle){ 0, upper.height, main_box.width, main_box.height - upper.height };
+
 	// blinking caret every half of a second
 	bool caret = ((int)(GetTime() / 0.5) % 2 == 0);
 	for (size_t i = 0; i < size; ++i)
 	{
 		// text input box
 		Rectangle ci = input_box(w, h, SSAA, i);
-		DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? act : norm);
+		if (ci.y + ci.height < clip.y || ci.y > clip.y + clip.height)
+			continue;
 
-		// validity indicator
-		if (inputs[i].valid)
-			DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, inputs[i].color);
-		else
-		{
-			Rectangle warning = (Rectangle){ ci.width * 0.073f, ci.y + ci.height * 0.3f, ci.height * 0.1f, ci.width * 0.05f };
-			DrawRectangleRec(warning, ORANGE);
-			DrawCircle(warning.x + warning.width * 0.52f, warning.y + warning.height * 1.45f, warning.width * 0.6f, ORANGE);
-		}
+		BeginScissorMode((int)clip.x, (int)clip.y, (int)clip.width, (int)clip.height);
+			DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? act : norm);
 
-		draw_input_text(ci, f, &inputs[i], font_size, i == active, caret, light);
+			// validity indicator
+			if (inputs[i].valid)
+				DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, inputs[i].color);
+			else
+			{
+				Rectangle warning = (Rectangle){ ci.width * 0.073f, ci.y + ci.height * 0.3f, ci.height * 0.1f, ci.width * 0.05f };
+				DrawRectangleRec(warning, ORANGE);
+				DrawCircle(warning.x + warning.width * 0.52f, warning.y + warning.height * 1.45f, warning.width * 0.6f, ORANGE);
+			}
+
+			draw_input_text(ci, f, &inputs[i], font_size, i == active, caret, light, clip);
+		EndScissorMode();
 	}
+	
+	draw_scrollbar(clip, size, h);
 }
 
 bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h,
@@ -183,6 +228,31 @@ bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h,
 	}
 
 	return false;
+}
+
+bool handle_input_scroll(size_t total, int h, bool on_input)
+{
+	float  h_box = (float)h * INPUT_H_REL;
+	float h_head = (float)h * INPUT_HEAD_REL;
+
+	float max_scroll = (float)total * h_box - (h - h_head);
+	if (max_scroll < 0.0f)
+		max_scroll = 0.0f;
+
+	float new_scroll = vscroll;
+	if (on_input)
+	{
+		float wheel = GetMouseWheelMove();
+		if (wheel)
+			new_scroll -= wheel * h_box;
+	}
+
+	new_scroll = CLAMP(new_scroll, 0.0f, max_scroll);
+	if (new_scroll == vscroll)
+		return false;
+
+	vscroll = new_scroll;
+	return true;
 }
 
 bool handle_input_typing(Input *inputs, size_t active)
