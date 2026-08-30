@@ -16,7 +16,7 @@
 
 ### Current issues
 - \*Discontinuities such as `1/x + C`, where `C != 0` or `exp(x)`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
-- Memory leakes and crashes are possible, some equations may produce unexpected results
+- Memory leaks and crashes are possible, some equations may produce unexpected results
 
 ### Installation
 1) Install [Raylib](https://github.com/raysan5/raylib)
