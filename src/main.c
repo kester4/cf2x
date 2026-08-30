@@ -20,7 +20,7 @@ int main(void)
 	size_t next_color = 1;
 
 	bool changed = true;
-	bool   light = false;
+	bool   light = true;
 
 	View view = { 0.0, 0.0, INITIAL_SCALE };
 

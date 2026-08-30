@@ -1,6 +1,5 @@
 #include "../include/tokenizer.h"
 
-
 static bool trimw_prevalidate(char *dst, char *src)
 {
 	// Check whenever there are invalid sequences,
@@ -8,13 +7,13 @@ static bool trimw_prevalidate(char *dst, char *src)
 	// before getting rid of whitespaces and
 	// writting trimmed string to dst buffer
 	// 
-	// Note: "- x" is still allowed /// TODO
-	// "<letter> = ...", "<letter>(x) = ..." is allowed too
-	// well, except for "e = ..." and "x = ..."
-
+	// Note: "- x" is still allowed and
+	// "F = ...", "y = ...", etc; and "<letter>(x) = ..."
+	// is allowed too, except for "e = ..." and "x = ..."
 	bool is_letter;
 	bool was_letter = false;
 	bool was_space = false;
+	char *dst_start = dst;
 
 	for (char *start = src; *start; ++start)
 	{
@@ -40,8 +39,30 @@ static bool trimw_prevalidate(char *dst, char *src)
 		if (!isspace((unsigned char)*start))
 			*dst++ = *start;
 	}
-
 	*dst = '\0';
+
+	char *eq = strchr(dst_start, '=');
+	if (!eq)
+		return true;
+
+	// "F = ...", "G(x) = ..." part
+	size_t eqchars = eq - dst_start;
+	if (eqchars != 1 && eqchars != 4)
+		return false;
+
+	if (eqchars == 1 || eqchars == 4)
+	{
+		if (!isalpha((unsigned char)dst_start[0]) ||
+			dst_start[0] == 'x' || dst_start[0] == 'e')
+			return false;
+
+		if (eqchars == 4 && strncmp(dst_start + 1, "(x)", 3) != 0)
+			return false;
+	}
+	else
+		return false;
+
+	memmove(dst_start, eq + 1, strlen(eq + 1) + 1);
 	return true;
 }
 
@@ -159,20 +180,17 @@ bool validate(char *dst, char *src)
 	return (bracket_depth == 0);
 }
 
-
 bool is_operand(unsigned char ch)
 {
 	return ch == '^' || ch == '*' || ch == '/'
 		|| ch == '+' || ch == '-';
 }
 
-
 static  void chr_cpy(char **arr, size_t idx, unsigned char src)
 {
 	arr[idx][0] = src;
 	arr[idx][1] = '\0';
 }
-
 
 TokenData tokenize(char *str)
 {
@@ -283,7 +301,6 @@ TokenData tokenize(char *str)
 		.size = ti
 	};
 }
-
 
 void free_tarray(TokenData _tokens)
 {

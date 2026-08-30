@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -O3 -march=native -mtune=native -std=c11 -Wall -Wextra -Wpedantic -I$(INCL_DIR)
-LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt
+LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 SRC_DIR   = src
 INCL_DIR  = include
