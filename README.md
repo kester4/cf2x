@@ -9,7 +9,7 @@
 ### Features
 - Supports single-variable equations with brackets, math operators, some trigonometric functions, logaritms and abs()
 - Is able to parse implicit multiplication and unary negation (shunting yard parser with RPN evaluator)
-- Uses recursive adaptive sampling to handle\* curvature plots
+- Uses recursive adaptive sampling to handle curvature plots
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels
 - Supports theme switching and SSAA for smoother lines
 
