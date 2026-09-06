@@ -16,6 +16,19 @@
 #include <float.h>
 #include <errno.h>
 
+typedef struct
+{
+	int lo;
+	int hi;
+} Span;
+
+typedef struct
+{ 
+	Span spans[32];
+	int  count;
+} DenomSpans;
+
+
 typedef enum
 {
 	OP_NUM,
@@ -35,20 +48,17 @@ typedef enum
 	OP_LN
 } OpType;
 
-
 typedef struct
 {
 	OpType type;
 	double value;
 } Instr;
 
-
 typedef struct
 {
 	double *values;
 	size_t msize;
 } ValueStack;
-
 
 // Shunting-yard's infix token array to postfix
 // token array, frees the infix array
@@ -70,3 +80,6 @@ Instr *prebake(TokenData _pftokens);
 
 // RPN's Instr array for the given arg value
 double evaluate(Instr *program, ValueStack *stack, double arg);
+
+DenomSpans denominator_spans(Instr *prog, size_t n);
+int poles_in_span(Instr *prog, ValueStack *vstack, Span sp, double x0, double x1, double *out, int max_out);

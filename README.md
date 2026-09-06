@@ -12,10 +12,8 @@
 - Uses recursive adaptive sampling to handle\* curvature plots
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels
 - Supports theme switching and SSAA for smoother lines
-- Render caching doesn't redraw canvas on every frame
 
 ### Current issues
-- \*Discontinuities such as `1/x + C`, where `C != 0` or `exp(x)`, where `x > 0` flattens out past some zoom-out level (adaptive sampling issue)
 - Memory leaks and crashes are possible, some equations may produce unexpected results
 
 ### Installation
@@ -39,7 +37,7 @@ make run
 
 ### TODO
 - [x] Add horizontal/vertical scrolling to the input menu  
-- [ ] Make `refine_plot()` detect things like `1/x + C`  
+- [x] Make `refine_plot()` detect things like `1/x + C`  
 - [x] Implement inserting new equations between already existing ones in the input menu
 - [x] Add `log`/`ln` and `exp` letter support  
 - [ ] Offload plots rendering to the GPU  

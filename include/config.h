@@ -35,7 +35,8 @@
 
 // adaptive function sampling
 #define   MAX_RECDEPTH (55)    
-#define   TOLERANCE_PX (0.35f)
+#define   TOLERANCE_PX (0.15f)
+#define    MAX_LEAF_PX (1.0f)
 
 #define CLAMP(val, min, max) \
 	((val) < (min) ? (min) : (val) > (max) ? (max) : (val))

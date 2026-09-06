@@ -289,7 +289,7 @@ bool handle_input_typing(Input *inputs, size_t active)
 		inp->origin[inp->caret] = (char)c;
 		++(inp->caret);
 
-		bool periodic = strchr(inputs[active].origin, 'n') || strchr(inputs[active].origin, 'o');
+		bool periodic = strstr(inputs[active].origin, "sin") || strstr(inputs[active].origin, "cos");
 		update_plot(&inputs[active], periodic);
 		return true;
 	}

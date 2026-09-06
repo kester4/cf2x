@@ -11,6 +11,7 @@
 
 typedef struct Input Input;   // forward declaration
 
+
 typedef struct
 {
 	double x_offset;
@@ -31,6 +32,7 @@ typedef struct
 	Instr *plot_program;
 	size_t plotp_length;
 	double *values;
+	DenomSpans denom_spans;
 } Plot;
 
 void render_grid(View v, Font f, int w, int h, bool light);

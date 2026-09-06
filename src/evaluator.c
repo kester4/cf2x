@@ -280,3 +280,81 @@ double evaluate(Instr *program, ValueStack *stack, double arg)
 
 	return s[sp - 1];
 }
+
+DenomSpans denominator_spans(Instr *prog, size_t n)
+{
+	DenomSpans result = { 0 };
+	int start[256];
+	int sp = 0;
+
+	for (size_t i = 0; i < n; i++)
+	{
+		switch (prog[i].type)
+		{
+		case OP_VAR:
+		case OP_NUM:
+			start[sp++] = (int)i;
+			break;
+		
+		case OP_LOG:
+		case OP_LN:
+			// domain restricted
+			if (result.count < 32)
+				result.spans[result.count++] = (Span){ start[sp - 1], (int)i - 1 };
+			break;
+
+		case OP_SIN: case OP_COS: case OP_TAN: case OP_COT:
+		case OP_ABS: case OP_EXP:
+			break;
+
+		case OP_MUL: case OP_DIV: case OP_ADD: case OP_SUB: case OP_POW:
+		{
+			int s_b = start[--sp];
+			int s_a = start[--sp];
+			if (prog[i].type == OP_DIV && result.count < 32)
+			if (prog[i].type == OP_DIV && result.count < 32)
+				result.spans[result.count++] = (Span){ s_b, (int)i - 1 };
+			start[sp++] = s_a;
+			break;
+		}
+		}
+	}
+	return result;
+}
+
+static double eval_span(Instr *prog, ValueStack *vstack, Span sp, double x)
+{
+	ValueStack sub = { .msize = (size_t)(sp.hi - sp.lo + 1), .values = vstack->values };
+	return evaluate(prog + sp.lo, &sub, x);
+}
+
+int poles_in_span(Instr *prog, ValueStack *vstack, Span sp, double x0, double x1, double *out, int max_out)
+{
+	const int COARSE_N = 400;
+	int count = 0;
+	double px = x0;
+	double py = eval_span(prog, vstack, sp, x0);
+
+	for (int i = 1; i <= COARSE_N && count < max_out; i++)
+	{
+		double x = x0 + (x1 - x0) * i / COARSE_N;
+		double y = eval_span(prog, vstack, sp, x);
+
+		if (isfinite(py) && isfinite(y) && py != 0.0 && ((py < 0) != (y < 0)))
+		{
+			double lo = px, hi = x, ylo = py;
+			for (int k = 0; k < 60; k++) {
+				double mid = (lo + hi) * 0.5;
+				double ymid = eval_span(prog, vstack, sp, mid);
+				if (!isfinite(ymid))
+					break;
+				if ((ymid < 0) != (ylo < 0))
+					hi = mid;
+				else { lo = mid; ylo = ymid; }
+			}
+			out[count++] = hi;
+		}
+		px = x; py = y;
+	}
+	return count;
+}

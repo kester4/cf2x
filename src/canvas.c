@@ -46,8 +46,9 @@ static Plot plot(char *valid_input)
 
 	return (Plot) {
 		.plot_program = program,
-			.plotp_length = postfix.size,
-			.values = values
+		.plotp_length = postfix.size,
+		.values = values,
+		.denom_spans = denominator_spans(program, postfix.size)
 	};
 }
 
@@ -168,12 +169,11 @@ static bool on_screen(Sample prev, Sample curr, int h)
 
 static void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, Sample prev, Sample curr, int depth, Color color)
 {
-	// degenerate sample
 	if (!prev.valid && !curr.valid)
 		return;
 
-	// we can't see them so y elaborate more?
-	if (depth > MAX_RECDEPTH / 5 && !on_screen(prev, curr, h))
+	float px_width = fabsf(curr.s.x - prev.s.x);
+	if (px_width <= MAX_LEAF_PX && prev.valid && curr.valid && !on_screen(prev, curr, h))
 		return;
 
 	if (depth >= MAX_RECDEPTH)
@@ -186,9 +186,11 @@ static void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, S
 	double xm = (prev.x + curr.x) * 0.5;
 	Sample mid = sample(prog, vstack, v, w, h, xm);
 
+	bool finite = isfinite(prev.s.y) && isfinite(mid.s.y) && isfinite(curr.s.y);
+
 	bool split = (!prev.valid || !mid.valid || !curr.valid) ||
-		fabsf(mid.s.y - (prev.s.y + curr.s.y) * 0.5f) > TOLERANCE_PX ||
-		((prev.y > 0.0f) != (curr.y > 0.0f)); // ? should this fix 1/x
+		(finite && fabsf(mid.s.y - (prev.s.y + curr.s.y) * 0.5f) > TOLERANCE_PX) ||
+		!finite || px_width > MAX_LEAF_PX;
 
 	if (on_screen(prev, curr, h) && !split)
 	{
@@ -206,39 +208,83 @@ void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic)
 		.msize = p.plotp_length,
 		.values = p.values
 	};
-
-	// init_appially only 2 points on different sides of the
-	// screen are needed (!not for sin/cos) as we're
-	// going to make more with adaptive sampling
 	double x_start = v.x_offset - (0.5 * w) / v.scale;
 	double   x_end = v.x_offset + (0.5 * w) / v.scale;
 
-	if (!is_periodic)
+	if (is_periodic)
 	{
-		refine_plot(
-			p.plot_program, &vstack, v, w, h,
-			sample(p.plot_program, &vstack, v, w, h, x_start),
-			sample(p.plot_program, &vstack, v, w, h, x_end),
-			0, color
-		);
+		const int N = (int)ceil(w / PERIODIC_FUNC);
+		double step = (x_end - x_start) / N;
+
+		Sample left = sample(p.plot_program, &vstack, v, w, h, x_start);
+		for (int i = 1; i < N; ++i)
+		{
+			x_start += step;
+
+			Sample right = sample(p.plot_program, &vstack, v, w, h, x_start);
+			refine_plot(p.plot_program, &vstack, v, w, h, left, right, 0, color);
+
+			left = right;
+		}
 		return;
 	}
 
-	// for sin(x)/cos(x), we need more init_appial samples
-	// their amount now becomes (width / PERIODIC_FUNC)
-	const int N = (int)ceil(w / PERIODIC_FUNC);
-	double step = (x_end - x_start) / N;
-
-	Sample left = sample(p.plot_program, &vstack, v, w, h, x_start);
-	for (int i = 1; i < N; ++i)
+	double poles[64];
+	int    npoles = 0;
+	for (int i = 0; i < p.denom_spans.count && npoles < 64; i++)
 	{
-		x_start += step;
-
-		Sample right = sample(p.plot_program, &vstack, v, w, h, x_start);
-		refine_plot(p.plot_program, &vstack, v, w, h, left, right, 0, color);
-
-		left = right;
+		npoles += poles_in_span(p.plot_program, &vstack,
+			p.denom_spans.spans[i], x_start, x_end, poles + npoles, 64 - npoles);
 	}
+		
+	double lo = x_start;
+	for (int i = 0; i < npoles; i++)
+	{
+		double hi = nextafter(poles[i], -INFINITY);
+
+		// pre pole
+		Sample nearHi = sample(p.plot_program, &vstack, v, w, h, hi);
+		if (nearHi.valid)
+		{
+			float border = 4.0f * h;
+			if (fabsf(nearHi.s.y - h * 0.5f) < border)
+			{
+				Sample stub = nearHi;
+				stub.x = hi;
+				stub.s.y = (nearHi.y < 0) ? border : -border;
+				DrawLineEx((Vector2) { nearHi.s.x, nearHi.s.y }, (Vector2) { stub.s.x, stub.s.y },
+					GRAPH_THICK *SSAA, color);
+			}
+		}
+
+		if (hi > lo)
+		{
+			refine_plot(p.plot_program, &vstack, v, w, h,
+				sample(p.plot_program, &vstack, v, w, h, lo),
+				sample(p.plot_program, &vstack, v, w, h, hi), 0, color);
+		}
+		lo = nextafter(poles[i], INFINITY);
+
+		// post pole
+		Sample near = sample(p.plot_program, &vstack, v, w, h, lo);
+		if (near.valid)
+		{
+			float border = 4.0f * h;
+			if (fabsf(near.s.y - h * 0.5f) < border)
+			{
+				Sample stub = near;
+				stub.x = lo;
+				stub.s.y = (near.y < 0) ? border : -border;
+				DrawLineEx((Vector2) { near.s.x, near.s.y }, (Vector2) { stub.s.x, stub.s.y },
+					GRAPH_THICK *SSAA, color);
+			}
+		}
+	}
+
+	refine_plot(p.plot_program, &vstack, v, w, h,
+		sample(p.plot_program, &vstack, v, w, h, lo),
+		sample(p.plot_program, &vstack, v, w, h, x_end),
+		0, color);
 }
 
 void free_plot(Plot *p)
@@ -289,7 +335,7 @@ bool handle_zooming(View *view, Vector2 mouse, int w, int h, bool on_input)
 	int   input_w = (int)(w / INPUTBOX_REL);
 
 	Vector2 world_before = world_from_screen(*view, mouse.x - input_w, mouse.y, w - input_w, h);
-	view->scale = CLAMP(view->scale * factor, 1e-5, 1e5);
+	view->scale = CLAMP(view->scale * factor, 1e-4, 1e5);
 	Vector2 world_after = world_from_screen(*view, mouse.x - input_w, mouse.y, w - input_w, h);
 
 	view->x_offset += (world_before.x - world_after.x);
