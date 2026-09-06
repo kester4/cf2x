@@ -18,13 +18,19 @@
 
 ### Installation
 1) Install [Raylib](https://github.com/raysan5/raylib)
-2) Run:
+2) Clone the repo and cd:
 ```bash
 git clone https://github.com/kester4/cf2x.git && cd cf2x
 ```
+3) Compile:
 ```bash
 make
 ```
+> Or, if you have a high-DPI monitor:
+```bash
+make HIGHDPI=1
+```
+4) Run:
 ```bash
 make run
 ```
