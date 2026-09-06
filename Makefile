@@ -7,6 +7,10 @@ INCL_DIR  = include
 BUILD_DIR = build
 BIN_DIR   = bin
 
+ifdef HIGHDPI
+    CFLAGS += -DHIGH_DPI
+endif
+
 ifeq ($(XDG_SESSION_TYPE), wayland)
 	LDFLAGS += -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
 endif

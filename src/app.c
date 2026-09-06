@@ -3,6 +3,9 @@
 bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 {
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+#ifdef HIGH_DPI
+	SetConfigFlags(FLAG_WINDOW_HIGHDPI);
+#endif
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
