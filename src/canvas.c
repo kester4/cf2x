@@ -57,13 +57,13 @@ static char *format(char *axis_label, double scale, double number, double step)
 	int past_e = (int)floor(log10(fabs(step)));
 	if (fabs(number) >= MAX_SHORTVAL && past_e >= 5 && scale < INITIAL_SCALE / 5)
 	{
-		float pre_e = (float)number / powf(10.0f, (float)past_e);
-		snprintf(axis_label, sizeof(axis_label), "%.1fE%d", pre_e, past_e);
+		double pre_e = number / powf(10.0f, (float)past_e);
+		snprintf(axis_label, 50, "%.1fE%d", pre_e, past_e);
 		return axis_label;
 	}
 
 	int dec = (step >= 1.0) ? 0 : (int)ceil(-log10(step));
-	snprintf(axis_label, sizeof(axis_label), "%.*f", dec, number);
+	snprintf(axis_label, 50, "%.*f", dec, number);
 
 	return axis_label;
 }
