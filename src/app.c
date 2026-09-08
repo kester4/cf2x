@@ -1,4 +1,5 @@
 #include "../include/app.h"
+float FONT_SIZE = 20.0f;
 
 bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 {
@@ -8,6 +9,15 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 #endif
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
+
+	int mon_h = GetMonitorPhysicalHeight(GetCurrentMonitor());
+	if (mon_h < 360) {
+		if (mon_h >= 290)      FONT_SIZE += 1.5f;
+		else if (mon_h >= 268) FONT_SIZE += 2.5f;
+		else if (mon_h >= 237) FONT_SIZE += 4.0f;
+		else if (mon_h >= 212) FONT_SIZE += 7.0f;
+		else                   FONT_SIZE += 10.0f;
+	}
 
 	Image icon = LoadImage("assets/icon.png");
 	if (!icon.data)

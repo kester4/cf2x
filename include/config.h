@@ -34,7 +34,7 @@
 
 // labels formatting
 #define   MAX_SHORTVAL (1e5)
-#define      FONT_SIZE (20.0f)
+extern float FONT_SIZE;
 
 // adaptive function sampling
 #define   MAX_RECDEPTH (55)    

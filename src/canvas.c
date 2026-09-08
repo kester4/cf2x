@@ -52,10 +52,8 @@ static Plot plot(char *valid_input)
 	};
 }
 
-static char *format(double scale, double number, double step)
+static char *format(char *axis_label, double scale, double number, double step)
 {
-	static char axis_label[50];
-
 	int past_e = (int)floor(log10(fabs(step)));
 	if (fabs(number) >= MAX_SHORTVAL && past_e >= 5 && scale < INITIAL_SCALE / 5)
 	{
@@ -84,12 +82,13 @@ void render_grid(View v, Font f, int w, int h, bool light)
 	Vector2      center = screen_from_world(v, 0.0, 0.0, w, h);
 	Vector2   top_right = world_from_screen(v, 0.0f, 0.0f, w, h);
 	Vector2 bottom_left = world_from_screen(v, (float)w, (float)h, w, h);
-	Vector2     current, next;
+	Vector2     current, next, tsz;
 
 	// major + minor grids VERTICAL
 	double x_start = floor(top_right.x / major) * major;
 	current = screen_from_world(v, x_start, 0, w, h);
 
+	static char axis_label[50];
 	for (double xi = x_start; xi <= bottom_left.x; xi += major)
 	{
 		next = screen_from_world(v, xi + major, 0, w, h);
@@ -105,11 +104,13 @@ void render_grid(View v, Font f, int w, int h, bool light)
 
 		// don't print zero at (0; 0)
 		if (fabs(xi) > 1e-12)
-			DrawTextEx(f, format(v.scale, xi, major),
-				(Vector2) {
-			current.x - 4.0f * SSAA, center.y + 2.0f * SSAA
-		},
+		{
+			tsz = MeasureTextEx(f, axis_label, FONT_SIZE * SSAA, 0.0f);
+			DrawTextEx(f, format(axis_label, v.scale, xi, major),
+				(Vector2) { current.x - tsz.x * 0.5f, current.y + tsz.y * 0.1f},
 				FONT_SIZE * SSAA, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
+		}
+			
 		current = next;
 	}
 
@@ -129,11 +130,13 @@ void render_grid(View v, Font f, int w, int h, bool light)
 			(light ? MJGRID_LIGHT : MJGRID_DARK));
 
 		if (fabs(yi) > 1e-12)
-			DrawTextEx(f, format(v.scale, yi, major),
-				(Vector2) {
-			center.x + 4.0f * SSAA, current.y - 8.0f * SSAA
-		},
+		{
+			tsz = MeasureTextEx(f, axis_label, FONT_SIZE * SSAA, 0.0f);
+			DrawTextEx(f, format(axis_label, v.scale, yi, major),
+				(Vector2) { center.x + tsz.y * 0.15f, current.y - tsz.y * 0.4f },
 				FONT_SIZE * SSAA, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
+		}
+
 		current = next;
 	}
 
@@ -253,7 +256,7 @@ void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic)
 				stub.x = hi;
 				stub.s.y = (nearHi.y < 0) ? border : -border;
 				DrawLineEx((Vector2) { nearHi.s.x, nearHi.s.y }, (Vector2) { stub.s.x, stub.s.y },
-					GRAPH_THICK *SSAA, color);
+					GRAPH_THICK * SSAA, color);
 			}
 		}
 
@@ -276,7 +279,7 @@ void render_plot(Plot p, View v, int w, int h, Color color, bool is_periodic)
 				stub.x = lo;
 				stub.s.y = (near.y < 0) ? border : -border;
 				DrawLineEx((Vector2) { near.s.x, near.s.y }, (Vector2) { stub.s.x, stub.s.y },
-					GRAPH_THICK *SSAA, color);
+					GRAPH_THICK * SSAA, color);
 			}
 		}
 	}
