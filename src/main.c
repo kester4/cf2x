@@ -33,10 +33,11 @@ int main(void)
 
 		changed |= handle_panning(&view, on_input);
 		changed |= handle_zooming(&view, mouse, w, h, on_input);
-		changed |= handle_input_click(inputs, mouse, w, h, &total, &active, &next_color, &light, on_input);
+		changed |= handle_inputs_delete(inputs, mouse, w, h, &active, &total)
+			|| handle_input_click(inputs, mouse, w, h, &total, &active, &next_color, &light, on_input);
 		changed |= handle_input_scroll(total, h, on_input);
 		changed |= handle_input_typing(inputs, active);
-		changed |= handle_input_delete(inputs, active);
+		changed |= handle_input_edit(inputs, active);
 		changed |= handle_inputs_navigation(inputs, &active, total);
 		changed |= handle_inputs_adding(inputs, &next_color, &active, &total);
 		changed |= handle_camera_reset(&view);

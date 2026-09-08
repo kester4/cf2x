@@ -12,11 +12,14 @@
 #define   INPUTBOX_REL (5)        // plots canvas : input column (width)
 #define INPUT_HEAD_REL (0.05f)    // input column head : full input column (height)
 #define    INPUT_H_REL (0.067f)   // single input field : full inputs column (height)
+#define  RM_BUTTON_REL (0.94f)    // equation remove button : full input cell (width)
 
 // sizes
-#define   INPUTB_THICK (2) 
-#define INPUTB_PADDING (15.0f)
-#define    SCROLLBAR_W (2.0f * INPUTB_THICK * SSAA)
+#define   INPUTB_THICK (2 * SSAA) 
+#define INPUTB_PADDING (15.0f * SSAA)
+#define    SCROLLBAR_W (2.0f * INPUTB_THICK)
+#define  RM_BUTTON_LEN (20.0f * SSAA)
+#define    RM_BUTTON_W (3.0f * SSAA)
 
 // plotting canvas parameters
 #define   GRID_SPACING (140)
@@ -49,7 +52,8 @@
 #define     TEXT_LIGHT ((Color){ 30, 30, 30, 255 })
 #define INPUTBOX_LIGHT ((Color){ 250, 250, 250, 255 })
 #define  INPUTUP_LIGHT ((Color){ 215, 215, 215, 255})
-#define    ERASE_LIGHT (INPUTBOX_LIGHT)
+#define     EDIT_LIGHT ((Color){ 120, 120, 120, 255 })
+#define    PURGE_LIGHT (INPUTBOX_LIGHT)
 
 #define      BGND_DARK ((Color){ 40, 40, 40, 255 })
 #define    MJGRID_DARK ((Color){ 82, 82, 82, 255 })
@@ -58,4 +62,5 @@
 #define      TEXT_DARK ((Color){ 245, 245, 245, 255 })
 #define  INPUTBOX_DARK ((Color){ 43, 43, 43, 255 })
 #define   INPUTUP_DARK ((Color){ 65, 65, 65, 255 })
-#define     ERASE_DARK (INPUTBOX_DARK)
+#define      EDIT_DARK ((Color){ 150, 150, 150, 255 })
+#define     PURGE_DARK (INPUTBOX_DARK)

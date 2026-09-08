@@ -34,14 +34,27 @@ static Rectangle input_box(int w, int h, int s, size_t i)
 		  box_w, box_h };
 }
 
+static Vector2 draw_remove_cross(Rectangle ci, bool light, bool draw)
+{
+	Rectangle  rm = (Rectangle){ ci.width * RM_BUTTON_REL, ci.y + ci.height * 0.5f, RM_BUTTON_W, ci.height * 0.25f };
+	Vector2 rmpos = (Vector2){ rm.width * 0.5f, rm.height * 0.5f };
+	if (draw)
+	{
+		DrawRectanglePro(rm, rmpos, 45.0f, light ? EDIT_LIGHT : EDIT_DARK);
+		DrawRectanglePro(rm, rmpos, -45.0f, light ? EDIT_LIGHT : EDIT_DARK);
+	}
+	
+	return rmpos;
+}
+
 static Vector2 draw_butons(Rectangle erase, Rectangle theme, Font f, float *fs, bool light)
 {
 	const char *ttext = light ? "Light" : "Dark";
 	const char *clear = "Clear all";
 	Vector2 text_size = MeasureTextEx(f, ttext, *fs, 0.0f);
 
-	DrawRectangleRounded(theme, 0.90f, 0, (light ? ERASE_LIGHT : ERASE_DARK));
-	DrawRectangleRounded(erase, 0.90f, 0, (light ? ERASE_LIGHT : ERASE_DARK));
+	DrawRectangleRounded(theme, 0.90f, 0, (light ? PURGE_LIGHT : PURGE_DARK));
+	DrawRectangleRounded(erase, 0.90f, 0, (light ? PURGE_LIGHT : PURGE_DARK));
 
 	// theme name
 	DrawTextEx(f, ttext, (Vector2)
@@ -96,8 +109,8 @@ static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size,
 	float caret_x = MeasureTextEx(f, input->origin, font_size, 0.0f).x;
 	input->origin[input->caret] = until;
 
-	// draw text inside [font_pos.x, render_canvas_beginning]
-	float visible_w = ci.width - font_pos.x - INPUTB_PADDING * SSAA;
+	// draw text inside [font_pos.x, remove_button_beginning]
+	float visible_w = ci.width - font_pos.x - INPUTB_PADDING - ci.width * (1 - RM_BUTTON_REL);
 	if (visible_w <= 0.0f)
 		visible_w = 0.0f;
 
@@ -123,8 +136,7 @@ static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size,
 	if (clip_h < 0.0f)
 		clip_h = 0.0f;
 
-	BeginScissorMode((int)font_pos.x - SSAA, (int)clip_top,
-		(int)(ci.width - font_pos.x - INPUTB_PADDING * SSAA), (int)clip_h);
+	BeginScissorMode((int)font_pos.x - SSAA, (int)clip_top, (int)visible_w, (int)clip_h);
 
 		DrawTextEx(f, input->origin,
 			(Vector2) { font_pos.x - input->scroll, font_pos.y },
@@ -144,7 +156,7 @@ static void draw_input_text(Rectangle ci, Font f, Input *input, float font_size,
 	EndScissorMode();
 }
 
-void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active, bool light)
+void render_menu(int w, int h, Font f, Input *inputs, size_t total, size_t active, bool light)
 {
 	Rectangle main_box = (Rectangle){ 0, 0, (int)w / INPUTBOX_REL * SSAA, SSAA * h };
 	Rectangle    upper = (Rectangle){ 0, 0, (int)w / INPUTBOX_REL * SSAA, INPUT_HEAD_REL * SSAA * h };
@@ -163,7 +175,7 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 
 	// blinking caret every half of a second
 	bool caret = ((int)(GetTime() / 0.5) % 2 == 0);
-	for (size_t i = 0; i < size; ++i)
+	for (size_t i = 0; i < total; ++i)
 	{
 		// text input box
 		Rectangle ci = input_box(w, h, SSAA, i);
@@ -171,23 +183,28 @@ void render_menu(int w, int h, Font f, Input *inputs, size_t size, size_t active
 			continue;
 
 		BeginScissorMode((int)clip.x, (int)clip.y, (int)clip.width, (int)clip.height);
-			DrawRectangleLinesEx(ci, INPUTB_THICK * SSAA, i == active ? act : norm);
+			// input cell
+			DrawRectangleLinesEx(ci, INPUTB_THICK, i == active ? act : norm);
 
 			// validity indicator
 			if (inputs[i].valid)
 				DrawCircle(ci.width * 0.075f, ci.y + ci.height * 0.5f, ci.height * 0.16f, inputs[i].color);
 			else
 			{
-				Rectangle warning = (Rectangle){ ci.width * 0.073f, ci.y + ci.height * 0.3f, ci.height * 0.1f, ci.width * 0.05f };
+				Rectangle warning = (Rectangle){ ci.width * 0.0615f, ci.y + ci.height * 0.3f, ci.height * 0.1f, ci.width * 0.05f };
 				DrawRectangleRec(warning, ORANGE);
-				DrawCircle(warning.x + warning.width * 0.52f, warning.y + warning.height * 1.45f, warning.width * 0.6f, ORANGE);
+				DrawCircle(warning.x + warning.width * 0.5395f, warning.y + warning.height * 1.47f, warning.width * 0.6f, ORANGE);
 			}
 
+			if (total > 1)
+				draw_remove_cross(ci, light, true);
+			
+			// equation original text
 			draw_input_text(ci, f, &inputs[i], font_size, i == active, caret, light, clip);
 		EndScissorMode();
 	}
 	
-	draw_scrollbar(clip, size, h);
+	draw_scrollbar(clip, total, h);
 }
 
 bool handle_input_click(Input *inputs, Vector2 mouse, int w, int h,
@@ -297,7 +314,62 @@ bool handle_input_typing(Input *inputs, size_t active)
 	return false;
 }
 
-bool handle_input_delete(Input *inputs, size_t active)
+bool handle_inputs_delete(Input *inputs, Vector2 mouse, int w, int h,
+	size_t *active, size_t *total)
+{
+	if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+		return false;
+	
+	if (*total <= 1)
+		return false;
+
+	float input_column_x = w * ((1.0f / INPUTBOX_REL) * (RM_BUTTON_REL - 0.03));
+	if (mouse.x < input_column_x || mouse.x > 1.07f * input_column_x)
+		return false;
+
+	for (size_t i = 0; i < *total; ++i)
+	{
+		Rectangle ci = input_box(w, h, 1.0f, i);
+		
+		// hit circle is centered in the cross
+		Vector2  hit = (Vector2){ ci.width * RM_BUTTON_REL, ci.y + ci.height * 0.5f };
+		if (!CheckCollisionPointCircle(mouse, hit, ci.height * 0.125f))
+			continue;
+
+		char *free_text = inputs[i].text;
+		char *free_orig = inputs[i].origin;
+		size_t  free_cap = inputs[i].capacity;
+
+		free_plot(&inputs[i].plot);
+
+		size_t last = *total - 1;
+		for (size_t j = i; j < last; ++j)
+			inputs[j] = inputs[j + 1];
+
+		inputs[last].plot = (Plot){ 0 };
+		inputs[last].text = free_text;
+		inputs[last].origin = free_orig;
+		inputs[last].capacity = free_cap;
+		inputs[last].text[0] = '\0';
+		inputs[last].origin[0] = '\0';
+		inputs[last].caret = 0;
+		inputs[last].scroll = 0.0f;
+		inputs[last].valid = false;
+		inputs[last].periodic = false;
+
+		--(*total);
+		if (i < *active)
+			--(*active);
+		if (*active >= *total)
+			*active = *total - 1;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool handle_input_edit(Input *inputs, size_t active)
 {
 	if (!IsKeyPressedRepeat(KEY_BACKSPACE) && !IsKeyPressed(KEY_BACKSPACE))
 		return false;

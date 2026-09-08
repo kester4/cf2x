@@ -7,7 +7,6 @@
 #endif
 
 #ifndef M_E
-	#undef M_E
 	#define M_E 2.71828182845904523536
 #endif
 
