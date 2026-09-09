@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -march=native -mtune=native -std=c11 -Wall -Wextra -Wpedantic -I$(INCL_DIR)
+CFLAGS = -O3 -flto -march=native -mtune=native -std=c11 -Wall -Wextra -Wpedantic -I$(INCL_DIR)
 LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt
 
 SRC_DIR   = src
