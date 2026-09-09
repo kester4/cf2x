@@ -18,7 +18,7 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		else                   FONT_SIZE += 3.0f;
 	}
 
-	Image icon = LoadImage("assets/icon.png");
+	Image icon = LoadImage("./assets/icon.png");
 	if (!icon.data)
 		printf("[!] Failed to load icon!\n");
 	else
@@ -28,7 +28,7 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 
-	*font = LoadFont("assets/LiberationSans-Regular.ttf");
+	*font = LoadFont("./assets/LiberationSans-Regular.ttf");
 	if (font->texture.id == 0)
 		printf("[!] Missing fonts!\n");
 	else
@@ -128,15 +128,9 @@ void render_frame(Input *inputs, RenderTexture2D plots_cache,
 
 	BeginDrawing();
 	DrawTexturePro(plots_cache.texture,
-		(Rectangle) {
-		0, 0, (float)(w * SSAA), -(float)(h * SSAA)
-	},
-		(Rectangle) {
-		0, 0, (float)(w), (float)(h)
-	},
-		(Vector2) {
-		0, 0
-	},
+		(Rectangle) { 0, 0, (float)(w * SSAA), -(float)(h * SSAA) },
+		(Rectangle) { 0, 0, (float)(w), (float)(h) },
+		(Vector2) { 0, 0 },
 		0.0f, WHITE);
 	EndDrawing();
 }
