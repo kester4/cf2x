@@ -24,10 +24,10 @@
 // plotting canvas parameters
 extern int GRID_SPACING;
 #define   MINORL_COUNT (3)
-#define   MINORL_THICK (1)
-#define     AXIS_THICK (3)
-#define    GRAPH_THICK (3)
-#define   MAJORL_THICK (2)
+extern int MINORL_THICK;
+extern int   AXIS_THICK;
+extern int  GRAPH_THICK;
+extern int MAJORL_THICK;
 #define  INITIAL_SCALE (30.0)
 #define    ZOOM_FACTOR (1.1)
 #define  PERIODIC_FUNC (8.0f)     // see render_plot()

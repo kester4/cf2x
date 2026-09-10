@@ -1,6 +1,11 @@
 #include "../include/app.h"
+
 float  FONT_SIZE = 20.0f;
 int GRID_SPACING = 140;
+int MINORL_THICK = 1;
+int MAJORL_THICK = 2;
+int  GRAPH_THICK = 3;
+int   AXIS_THICK = 3;
 
 bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 {
@@ -10,15 +15,19 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 #endif
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
-
+	
 	/*
 	// this is used in release build
-	
 	int mon_h = GetMonitorPhysicalHeight(GetCurrentMonitor());
-	if (mon_h < 360)
+	if (mon_h < 200)
 	{
-		FONT_SIZE    *= (381.0f / (float)mon_h);
-		GRID_SPACING *= (381.0f / (float)mon_h);
+		float mult = 381.0f / (float)mon_h;
+		FONT_SIZE    *= mult;
+		GRID_SPACING *= mult;
+		MINORL_THICK *= mult;
+		MAJORL_THICK *= mult;
+		 GRAPH_THICK *= mult;
+		  AXIS_THICK *= mult;
 	}
 	*/
 

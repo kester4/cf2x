@@ -7,3 +7,4 @@ cf2x.*
 build/
 bin/
 tests.*
+*x86*
