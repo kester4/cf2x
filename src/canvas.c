@@ -73,7 +73,7 @@ void render_grid(View v, Font f, int w, int h, bool light)
 	double spacing = GRID_SPACING * SSAA / v.scale;
 	double   order = floor(log10(spacing));
 	double    norm = spacing / pow(10.0, order); // from 1 to 10
-	double    mult = (norm < 1.5) ? 1.5 : (norm < 3.0) ? 3.0 : (norm < 7.0) ? 4.0 : 8.0;
+	double    mult = (norm < 1.5) ? 1.0 : (norm < 3.0) ? 2.0 : (norm < 7.0) ? 5.0 : 10.0;
 	double   major = mult * pow(10.0, order);
 	double   minor = major / MINORL_COUNT;
 
@@ -105,8 +105,9 @@ void render_grid(View v, Font f, int w, int h, bool light)
 		// don't print zero at (0; 0)
 		if (fabs(xi) > 1e-12)
 		{
+			format(axis_label, v.scale, xi, major);
 			tsz = MeasureTextEx(f, axis_label, FONT_SIZE * SSAA, 0.0f);
-			DrawTextEx(f, format(axis_label, v.scale, xi, major),
+			DrawTextEx(f, axis_label,
 				(Vector2) { current.x - tsz.x * 0.5f, current.y + tsz.y * 0.1f},
 				FONT_SIZE * SSAA, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
 		}
@@ -131,8 +132,9 @@ void render_grid(View v, Font f, int w, int h, bool light)
 
 		if (fabs(yi) > 1e-12)
 		{
+			format(axis_label, v.scale, yi, major);
 			tsz = MeasureTextEx(f, axis_label, FONT_SIZE * SSAA, 0.0f);
-			DrawTextEx(f, format(axis_label, v.scale, yi, major),
+			DrawTextEx(f, axis_label,
 				(Vector2) { center.x + tsz.y * 0.15f, current.y - tsz.y * 0.4f },
 				FONT_SIZE * SSAA, 0.0f, (light ? TEXT_LIGHT : TEXT_DARK));
 		}
@@ -185,7 +187,6 @@ static void refine_plot(Instr *prog, ValueStack *vstack, View v, int w, int h, S
 			DrawLineEx((Vector2) { prev.s.x, prev.s.y }, (Vector2) { curr.s.x, curr.s.y }, GRAPH_THICK * SSAA, color);
 		return;
 	}
-
 	double xm = (prev.x + curr.x) * 0.5;
 	Sample mid = sample(prog, vstack, v, w, h, xm);
 

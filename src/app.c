@@ -11,7 +11,7 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 
-	/* 
+	/*
 	// this is used in release build
 	
 	int mon_h = GetMonitorPhysicalHeight(GetCurrentMonitor());
