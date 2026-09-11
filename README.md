@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/kester4/cf2x/blob/main/assets/icon.png?raw=true"
+  <img src="https://github.com/kester4/cf2x/blob/main/assets/cf2x.png?raw=true"
        alt="cf2x Icon"
        width="128"
        height="128">
