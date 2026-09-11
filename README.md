@@ -16,8 +16,8 @@
 ## Gallery
 <table align="center">
   <tr>
-    <td><img src="./media/cf2x-light.png" alt="Light Theme" width="100%"></td>
-    <td><img src="./media/cf2x-dark.png" alt="Dark Theme" width="100%"></td>
+    <td><img src="./media/cf2x-light.png" alt="Light Theme" width="100%" align=center></td>
+    <td><img src="./media/cf2x-dark.png" alt="Dark Theme" width="100%" align=center></td>
   </tr>
 </table>
 
