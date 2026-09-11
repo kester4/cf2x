@@ -23,10 +23,10 @@
 
 ## Installation
 ### Windows
-Download the zip archive from [Releases](https://github.com/kester4/cf2x/releases/latests). Extract it, and run `cf2x.exe`. No installation required
+Download the zip archive from [Releases](https://github.com/kester4/cf2x/releases/latest). Extract it, and run `cf2x.exe`. No installation required
 
 ### Linux
-Download the tarball from [Releases](https://github.com/kester4/cf2x/releases/latests). Extract it, cd and run:
+Download the tarball from [Releases](https://github.com/kester4/cf2x/releases/latest). Extract it, cd and run:
 ```bash
 sudo install -Dm755 cf2x /usr/local/bin/cf2x && \
 sudo install -Dm644 assets/cf2x.png /usr/local/share/cf2x/cf2x.png && \
