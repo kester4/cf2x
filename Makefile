@@ -1,6 +1,8 @@
 CC = gcc
-CFLAGS = -O3 -flto -march=native -mtune=native -std=c11 -Wall -Wextra -Wpedantic -I$(INCL_DIR)
+CFLAGS = -O3 -flto -std=c11 -Wall -Wextra -Wpedantic -I$(INCL_DIR)
 LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt
+
+mode ?= default
 
 SRC_DIR   = src
 INCL_DIR  = include
@@ -11,12 +13,19 @@ ifdef HIGHDPI
     CFLAGS += -DHIGH_DPI
 endif
 
-ifeq ($(XDG_SESSION_TYPE), wayland)
-	LDFLAGS += -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
-endif
+ifeq ($(mode), default)
+	CFLAGS += -march=native -mtune=native
 
-ifeq ($(XDG_SESSION_TYPE), x11)
+	ifeq ($(XDG_SESSION_TYPE), wayland)
+		LDFLAGS += -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
+	else
+		LDFLAGS += -lX11
+	endif
+
+else ifeq ($(mode), release)
+	CFLAGS += -march=x86-64 -mtune=generic -s -DNDEBUG -DRELEASE_BUILD
 	LDFLAGS += -lX11
+
 endif
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)

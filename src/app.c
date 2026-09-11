@@ -1,5 +1,4 @@
 #include "../include/app.h"
-
 float  FONT_SIZE = 20.0f;
 int GRID_SPACING = 140;
 int MINORL_THICK = 1;
@@ -16,22 +15,30 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 	InitWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "cf2x");
 	SetTargetFPS(60);
 	
-	/*
-	// this is used in release build
+#ifdef RELEASE_BUILD
 	int mon_h = GetMonitorPhysicalHeight(GetCurrentMonitor());
 	if (mon_h < 200)
 	{
 		float mult = 381.0f / (float)mon_h;
-		FONT_SIZE    *= mult;
+		FONT_SIZE *= mult;
 		GRID_SPACING *= mult;
 		MINORL_THICK *= mult;
 		MAJORL_THICK *= mult;
-		 GRAPH_THICK *= mult;
-		  AXIS_THICK *= mult;
+		GRAPH_THICK *= mult;
+		AXIS_THICK *= mult;
 	}
-	*/
+#endif
 
-	Image icon = LoadImage("./assets/icon.png");
+	char image_path[50], font_path[50];
+#if defined(RELEASE_BUILD) && defined(__linux__)
+	strcpy(image_path, "/usr/local/share/cf2x/cf2x.png");
+	strcpy(font_path,  "/usr/local/share/cf2x/LiberationSans-Regular.ttf");
+#else
+	strcpy(image_path, "./assets/cf2x.png");
+	strcpy(font_path, "./assets/LiberationSans-Regular.ttf");
+#endif
+
+	Image icon = LoadImage(image_path);
 	if (!icon.data)
 		printf("[!] Failed to load icon!\n");
 	else
@@ -41,7 +48,7 @@ bool init_app(Font *font, RenderTexture2D *plots_cache, Input *inputs)
 		UnloadImage(icon);
 	}
 
-	*font = LoadFont("./assets/LiberationSans-Regular.ttf");
+	*font = LoadFont(font_path);
 	if (font->texture.id == 0)
 		printf("[!] Missing fonts!\n");
 	else
