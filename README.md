@@ -11,7 +11,7 @@
 - Is able to parse implicit multiplication and unary negation (shunting yard parser with RPN evaluator)
 - Has interactive pan and zoom, dynamic coordinate grid and axis labels
 - Uses recursive adaptive sampling to handle curvature plots
-- Impelents SSAA for smoother lines and has a dark theme
+- Implements SSAA for smoother lines and has a dark theme
 
 ## Gallery
 <table align="center">
